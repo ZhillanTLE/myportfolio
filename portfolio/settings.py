@@ -31,8 +31,8 @@ PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = not PRODUCTION
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".pbp.cs.ui.ac.id"]
-CSRF_TRUSTED_ORIGINS = ['https://*.pbp.cs.ui.ac.id']
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".pws.cs.ui.ac.id"]
+CSRF_TRUSTED_ORIGINS = ['https://*.pws.cs.ui.ac.id']
 
 
 # Application definition
