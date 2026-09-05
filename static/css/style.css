@@ -20,7 +20,7 @@ html {
 }
 
 body {
-    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: "Bricolage Grotesque", system-ui, sans-serif;
     color: var(--ink);
     background-color: var(--paper);
     line-height: 1.6;
