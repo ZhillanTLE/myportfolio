@@ -139,6 +139,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Serve static files straight from STATICFILES_DIRS so the app does not
+# depend on collectstatic having run during the container build.
+WHITENOISE_USE_FINDERS = True
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
 
