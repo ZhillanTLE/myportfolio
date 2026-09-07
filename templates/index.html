@@ -13,7 +13,10 @@
 <body>
     <header class="site-header">
         <div class="container">
-            <a href="#profile" class="brand">Zhillan Baniaksa</a>
+            <a>Zhillan Baniaksa</a>
+            <nav>
+            <a>Computer Science &middot; Universitas Indonesia</a>
+            </nav>
             <nav>
                 <a href="#profile">Profile</a>
             </nav>
@@ -23,17 +26,14 @@
         <section class="hero" id="profile">
             <div class="container hero-grid">
                 <div class="hero-identity">
-                    <p class="hero-kicker">Computer Science &middot; Universitas Indonesia</p>
-                    <h1>Zhillan</h1>
+                    <h1>Zhillan.</h1>
                 </div>
                 <div class="hero-photo">
-                    <div class="photo-block"></div>
-                    <img class="avatar" src="{% static 'img/zhillanHeadShot.png' %}" alt="Photo of Zhillan">
-                    <img class="avatar avatar-flicker" src="{% static 'img/THEGOAT.jpg' %}" alt="" aria-hidden="true">
-                </div>
-                <div class="hero-details">
-                    <p class="bio">Hi, I'm currently taking a Platform Based Development course as a 3rd semester student at Fasilkom UI. No such goat image flickering  is implemented btw. That just happens.</p>
-                    <dl class="meta-list">
+                    <div class="photo-frame">
+                        <img class="avatar" src="{% static 'img/zhillanHeadShot.png' %}" alt="Photo of Zhillan">
+                        <img class="avatar avatar-flicker" src="{% static 'img/THEGOAT.jpg' %}" alt="" aria-hidden="true">
+                    </div>
+                    <dl class="meta-list photo-meta">
                         <div class="meta-row">
                             <dt>NPM</dt>
                             <dd>2506637174</dd>
@@ -43,10 +43,19 @@
                             <dd>S1 Ilmu Komputer KKI</dd>
                         </div>
                     </dl>
+                </div>
+                <div class="hero-details">
+                    <p class="bio">Currently taking Web Development Course <span class="mention">@ Fasilkom UI.</span></p>
+                    <p class="bio">I build things at the intersection of clean design, solid code, and clear execution.</p>
+                    <p class="bio">When I'm away from a keyboard, I’m usually behind the wheel or breaking down mechanics in whatever game has my attention, or just,  sleeping.</p>
+                    <p class="bio">No such goat image flickering  is implemented btw. That just happens.</p>
                     <div class="social-links">
                         <a href="https://github.com/ZhillanTLE" class="social-link">GitHub</a>
                         <a href="https://www.linkedin.com/in/zhillan-baniaksa-0b9244235/" class="social-link">LinkedIn</a>
-                        <a href="mailto:zhillan.baniaksa@ui.ac.id" class="social-link">Email</a>
+                        <a href="mailto:zhillan.baniaksa@ui.ac.id" class="social-link white-social">
+                            Email Me
+                            <img class="social-icon" src="{% static 'icons/email-icon.svg' %}" alt="" aria-hidden="true">
+                        </a>
                     </div>
                 </div>
             </div>
@@ -54,47 +63,53 @@
         <section class="experience" id="experience">
             <div class="container">
                 <h2 class="section-title">Experience</h2>
-                <article class="role">
-                    <header class="role-header">
-                        <div class="role-heading">
-                            <h3 class="role-title">Product Management Intern</h3>
-                            <p class="role-org">Opsigo Asia &middot; Jakarta</p>
-                        </div>
-                        <p class="role-dates">Jul &ndash; Aug 2026</p>
-                    </header>
-                    <ul class="role-points">
-                        <li>Researched and shipped a consolidated multi-item cart, replacing the repeated search-and-compare cycle across flights, hotels, and rail with a single flow &middot;; a projected 66.6% drop in admin work per itinerary.</li>
-                        <li>Led a High/Standard/Low fare-tiering feature that auto-ranks search results with QuickSelect partitioning, cutting manual price benchmarking and reducing SLA response time per item search by 75%.</li>
-                    </ul>
-                </article>
-                <article class="role">
-                    <header class="role-header">
-                        <div class="role-heading">
-                            <h3 class="role-title">Manager of Website Development (PM)</h3>
-                            <p class="role-org">Open House Fasilkom 2026 &middot; Universitas Indonesia</p>
-                        </div>
-                        <p class="role-dates">Feb &ndash; Present</p>
-                    </header>
-                    <ul class="role-points">
-                        <li>Memecut IT Dev & UIUX</li>
-                        <li>Memasak PRD</li>
-                        <li>CLARITYYY INNN TECHNOLOGYYYY!!</li>
-                    </ul>
-                </article>
-                <article class="role">
-                    <header class="role-header">
-                        <div class="role-heading">
-                            <h3 class="role-title">Chief Product Officer @ Tinta, a GEMASTIK project </h3>
-                            <p class="role-org">GEMASTIK 2026, National Student ICT Competition &middot; Indonesia</p>
-                        </div>
-                        <p class="role-dates">May 2026</p>
-                    </header>
-                    <ul class="role-points">
-                        <li>I LOVE ZAYYAN AND NIA</li>
+                <details class="role">
+                    <summary class="role-header">
+                        <span class="role-dates">Jul &ndash; Aug 2026</span>
+                        <span class="role-rule" aria-hidden="true"></span>
+                        <h3 class="role-title">Product Management Intern</h3>
+                        <span class="role-chevron" aria-hidden="true"></span>
+                    </summary>
+                    <div class="role-body">
+                        <p class="role-org">Opsigo Asia &middot; Jakarta</p>
+                        <ul class="role-points">
+                            <li>Researched and shipped a consolidated multi-item cart, replacing the repeated search-and-compare cycle across flights, hotels, and rail with a single flow &middot; a projected 66.6% drop in admin work per itinerary.</li>
+                            <li>Led a High/Standard/Low fare-tiering feature that auto-ranks search results with QuickSelect partitioning, cutting manual price benchmarking and reducing SLA response time per item search by 75%.</li>
+                        </ul>
+                    </div>
+                </details>
+                <details class="role">
+                    <summary class="role-header">
+                        <span class="role-dates">FEB &ndash; Present 2026</span>
+                        <span class="role-rule" aria-hidden="true"></span>
+                        <h3 class="role-title">Manager of Website Development (PM)</h3>
+                        <span class="role-chevron" aria-hidden="true"></span>
+                    </summary>
+                    <div class="role-body">
+                        <p class="role-org">Open House Fasilkom UI &middot; Depok</p>
+                        <ul class="role-points">
+                            <li>Memecut IT Dev & UIUX</li>
+                            <li>Memasak PRD</li>
+                            <li>CLARITYYY INNN TECHNOLOGYYYY!!</li>
+                        </ul>
+                    </div>
+                </details>
+             <details class="role">
+                    <summary class="role-header">
+                        <span class="role-dates">May &ndash; 2026</span>
+                        <span class="role-rule" aria-hidden="true"></span>
+                        <h3 class="role-title">Chief Product Officer @ Tinta, a GEMASTIK project</h3>
+                        <span class="role-chevron" aria-hidden="true"></span>
+                    </summary>
+                    <div class="role-body">
+                        <p class="role-org">GEMASTIK 2026 &middot; Indonesia</p>
+                        <ul class="role-points">
+                            <li>I LOVE ZAYYAN AND NIA</li>
                         <li>Served as Technical Product Manager, leading the technical architecture for a 3-person CS team building an academic writing integrity platform for Indonesian higher education</li>
                         <li>Designed a full-stack system featuring role-based access control, real-time collaboration, and a process-basedwriting verification approach</li>
-                    </ul>
-                </article>
+                        </ul>
+                    </div>
+                </details>
             </div>
         </section>
     </main>
