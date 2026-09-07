@@ -236,6 +236,7 @@ h1, .brand {
 
 .mention {
     color: var(--mention);
+    white-space: nowrap;
 }
 
 /* Flicker Effect */
@@ -447,7 +448,7 @@ h1, .brand {
     .photo-meta {
         grid-area: meta;
         margin-top: 0;
-        justify-content: center;
+        justify-content: flex-start;
         gap: 2.5rem;
     }
 
