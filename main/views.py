@@ -1,6 +1,6 @@
 from django.shortcuts import render
 
-from main.models import Experience
+from main.models import Project
 
 
 def show_main(request):
@@ -15,9 +15,13 @@ def show_main(request):
     return render(request, "index.html", context)
 
 
-def show_experience(request):
+def show_projects(request):
     context = {
         "name": "Zhillan",
-        "experience_list": Experience.objects.all(),
+        "npm": "2506637174",
+        "study_program": "S1 Ilmu Komputer KKI",
+        "bio": "formally known as Zhillan Baniaksa",
+        "project_list": Project.objects.prefetch_related("peers"),
     }
-    return render(request, "experience.html", context)
+
+    return render(request, "projects.html", context)

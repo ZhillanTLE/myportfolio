@@ -1,0 +1,184 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>document.documentElement.className = "js";</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ name }} - Projects</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=8">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <nav class="nav-jump">
+                <a href="{% url 'main:show_main' %}">Profile</a>
+            </nav>
+            <nav class="nav-jump">
+                <a href="{% url 'main:show_projects' %}">Work</a>
+            </nav>
+        </div>
+    </header>
+    <main>
+        <section class="projects" id="projects">
+            <div class="container">
+                <div class="projects-head">
+                    <h1>Recent Projects</h1>
+                    <p class="projects-sub">proof(s) I don't sleep</p>
+                </div>
+
+                <div class="deck">
+                    <div class="deck-stack" tabindex="0" role="group"
+                         aria-roledescription="carousel"
+                         aria-label="Project screenshots. Drag the front card, or press the arrow keys, to see the next one.">
+                        {% for project in project_list %}
+                        <article class="stack-card"
+                                 data-depth="{{ forloop.counter0 }}"
+                                 aria-hidden="{% if forloop.first %}false{% else %}true{% endif %}">
+                            <span class="stack-card-year">{{ project.year }}</span>
+                            <div class="stack-card-shot">
+                                {% if project.image %}
+                                    <img class="stack-card-img"
+                                         src="{% static project.image %}"
+                                         alt="Screenshot of {{ project.title }}"
+                                         draggable="false">
+                                {% endif %}
+                            </div> 
+                            <div class="stack-card-foot">
+                                <span class="stack-card-tech">{{ project.tech_list|join:" + " }}</span>
+                                {% if project.live_url %}
+                                    <a class="social-link" href="{{ project.live_url }}"
+                                       target="_blank" rel="noopener">Website</a>
+                                {% endif %}
+                                {% if project.repo_url %}
+                                    <a class="social-link" href="{{ project.repo_url }}"
+                                       target="_blank" rel="noopener">Github</a>
+                                {% endif %}
+                            </div>
+                        </article>
+                        {% empty %}
+                        <p class="empty-state">No projects added yet.</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="deck-details">
+                        {% for project in project_list %}
+                        <article class="deck-detail{% if forloop.first %} is-active{% endif %}">
+                            <h2 class="deck-title">{{ project.title }}</h2>
+                            <p class="deck-description">{{ project.description }}</p>
+                            {% if project.peers.all %}
+                                <div class="peer-row">
+                                    {% for peer in project.peers.all %}
+                                    <span class="peer-item" tabindex="0">
+                                        <img class="peer"
+                                             src="{% static peer.icon %}"
+                                             alt="{{ peer.name }}">
+                                        <span class="peer-name">{{ peer.name }}</span>
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </article>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2026 {{ name }}, {{ npm }} {{ study_program }}, {{ bio }}</p>
+        </div>
+    </footer>
+
+    <script>
+    (function () {
+        var stack = document.querySelector(".deck-stack");
+        if (!stack) return;
+        var cards = Array.prototype.slice.call(stack.querySelectorAll(".stack-card"));
+        var details = Array.prototype.slice.call(document.querySelectorAll(".deck-detail"));
+        var n = cards.length;
+        if (!n) return;
+
+        var active = 0;
+        var SWIPE_PX = 90;     // drag further than this to commit the swipe
+        var LEAVE_MS = 400;    // must match the .stack-card transition duration in CSS
+        var busy = false;
+
+        function layout() {
+            cards.forEach(function (card, i) {
+                var depth = (i - active + n) % n;
+                card.setAttribute("data-depth", depth);
+                card.setAttribute("aria-hidden", depth === 0 ? "false" : "true");
+            });
+            details.forEach(function (d, i) {
+                d.classList.toggle("is-active", i === active);
+            });
+        }
+
+        function advance(direction) {
+            if (busy || n < 2) return;
+            busy = true;
+            var front = cards[active];
+            front.setAttribute("data-leave", direction < 0 ? "left" : "right");
+            front.classList.add("is-leaving");
+            setTimeout(function () {
+                front.classList.add("no-transition");
+                front.classList.remove("is-leaving");
+                front.removeAttribute("data-leave");
+                active = (active + 1) % n;
+                layout();
+                void front.offsetWidth;   // flush styles so the jump to the back is instant, not animated
+                front.classList.remove("no-transition");
+                busy = false;
+            }, LEAVE_MS);
+        }
+
+        /* Drag / swipe on the front card */
+        var dragging = false, startX = 0, dx = 0;
+
+        stack.addEventListener("pointerdown", function (e) {
+            if (busy) return;
+            var front = cards[active];
+            if (!front.contains(e.target) || e.target.closest("a")) return;
+            dragging = true;
+            startX = e.clientX;
+            dx = 0;
+            front.classList.add("is-dragging");
+            front.setPointerCapture(e.pointerId);
+        });
+
+        stack.addEventListener("pointermove", function (e) {
+            if (!dragging) return;
+            dx = e.clientX - startX;
+            var front = cards[active];
+            front.style.setProperty("--drag-x", dx + "px");
+            front.style.setProperty("--drag-rot", (dx / 20) + "deg");
+        });
+
+        function endDrag() {
+            if (!dragging) return;
+            dragging = false;
+            var front = cards[active];
+            front.classList.remove("is-dragging");
+            front.style.removeProperty("--drag-x");
+            front.style.removeProperty("--drag-rot");
+            if (Math.abs(dx) > SWIPE_PX) advance(dx < 0 ? -1 : 1);
+        }
+        stack.addEventListener("pointerup", endDrag);
+        stack.addEventListener("pointercancel", endDrag);
+
+        /* Keyboard */
+        stack.addEventListener("keydown", function (e) {
+            if (e.key === "ArrowRight") { e.preventDefault(); advance(1); }
+            if (e.key === "ArrowLeft")  { e.preventDefault(); advance(-1); }
+        });
+
+        layout();
+    })();
+    </script>
+</body>
+</html>

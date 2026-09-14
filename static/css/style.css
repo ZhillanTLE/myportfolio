@@ -369,12 +369,7 @@ h1, .brand {
     font-size: 0.85rem;
     border-top: 1px solid var(--line);
 }
-/* Experience */
-.experience-section {
-    padding: 4rem 0;
-    border-top: 1px solid var(--line);
-}
-
+/* Projects */
 .section-kicker {
     color: var(--accent-dark);
     font-size: 0.8rem;
@@ -383,52 +378,255 @@ h1, .brand {
     text-transform: uppercase;
 }
 
-.experience-section h1 {
-    margin: 0.4rem 0 1.5rem;
-    font-size: 2rem;
-}
-
-.experience-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1rem;
-}
-
-.experience-card {
-    padding: 1.25rem;
-    background-color: var(--paper);
-    border: 1px solid var(--accent-dark);
-    border-radius: 6px;
-}
-
-.experience-category {
-    color: var(--accent-dark);
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-}
-
-.experience-card h2 {
-    margin: 0.5rem 0;
-    font-size: 1.25rem;
-}
-
-.experience-description,
 .empty-state {
     color: var(--text-muted);
 }
 
-.experience-status {
-    margin-top: 1rem;
-    font-size: 0.85rem;
-    font-weight: 600;
+.projects {
+    padding: 10rem 0 7rem;
 }
+
+.projects-head {
+    text-align: center;
+}
+
+.projects-head h1 {
+    font-size: 2.25rem;
+    letter-spacing: -0.02em;
+}
+
+.projects-sub {
+    margin-top: 0.25rem;
+    color: var(--text-muted);
+    font-size: 1.05rem;
+}
+
+/* Card deck */
+.deck {
+    max-width: 780px;
+    margin: 0 auto;
+    --stack-lift: 3rem;     /* how far each card behind peeks up past the one in front */
+    --stack-blur: 2px;      /* the "10%" blur on the screenshots behind */
+    --card-radius: 4px;
+    --card-face: #ffffff;   /* front card fill */
+
+}
+
+.deck-stack {
+    position: relative;
+    aspect-ratio: 3 / 2;
+    margin-top: calc(var(--stack-lift) * 2 + 2rem);   /* room for the two peeking cards */
+    outline: none;
+    touch-action: pan-y;    /* horizontal drag is ours; vertical scroll stays the browser's */
+}
+
+.deck-stack:focus-visible {
+    outline: 1px dashed var(--text-muted);
+    outline-offset: 8px;
+}
+.stack-card {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;   /* year / screenshot / foot */
+    padding: 1rem 1.25rem 1.1rem;
+    overflow: hidden;
+    background-color: var(--card-face);
+    color: var(--paper);
+    border: 1px solid var(--card-face);
+    border-radius: var(--card-radius);
+    transform-origin: 50% 0;
+    transform: translateY(calc(var(--stack-lift) * -3)) scale(0.55);
+    opacity: 0;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+    will-change: transform;
+}
+
+
+/* depth 0 = the front card. --drag-x / --drag-rot are written inline by JS mid-drag. */
+.stack-card[data-depth="0"] {
+    z-index: 3;
+    opacity: 1;
+    pointer-events: auto;
+    cursor: grab;
+    background-color: var(--card-face);
+    color: var(--paper);
+    border-color: var(--card-face);
+    transform: translateX(var(--drag-x, 0px)) rotate(var(--drag-rot, 0deg));
+}
+
+
+.stack-card[data-depth="0"].is-dragging {
+    cursor: grabbing;
+    transition: none;
+}
+
+.stack-card[data-depth="1"] {
+    z-index: 2;
+    opacity: 1;
+    transform: translateY(calc(var(--stack-lift) * -1)) scale(0.85) rotate(2deg);
+}
+
+.stack-card[data-depth="2"] {
+    z-index: 1;
+    opacity: 1;
+    transform: translateY(calc(var(--stack-lift) * -2)) scale(0.70) rotate(-2deg);
+}
+
+.stack-card.is-leaving[data-leave="right"] {
+    transform: translateX(130%) rotate(12deg);
+    opacity: 0;
+}
+
+.stack-card.is-leaving[data-leave="left"] {
+    transform: translateX(-130%) rotate(-12deg);
+    opacity: 0;
+}
+
+.stack-card.no-transition {
+    transition: none;
+}
+
+.stack-card-shot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    padding: 0.5rem 0;
+}
+
+
+.stack-card-img {
+    display: block;
+    max-width: 85%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border: 1px solid rgba(10, 10, 10, 0.15);
+    transition: filter 0.4s ease;
+}
+
+
+.stack-card:not([data-depth="0"]) .stack-card-img {
+    filter: blur(var(--stack-blur));
+}
+
+
+.stack-card-year {
+    justify-self: end;
+    font-family: "Space Grotesk", -apple-system, sans-serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+    color: inherit;
+}
+
+
+.stack-card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1.25rem;
+}
+
+
+.stack-card-tech {
+    font-size: 1.05rem;
+    color: inherit;
+}
+
+/* Details under the deck: one per project, only the front card's is shown */
+.deck-details {
+    margin-top: 3.25rem;
+}
+
+.deck-detail {
+    display: none;
+}
+
+.deck-detail.is-active {
+    display: block;
+    animation: detail-in 0.35s ease;
+}
+
+@keyframes detail-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.deck-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.deck-description {
+    margin-top: 1rem;
+    max-width: 600px;
+    color: var(--text-muted);
+    font-size: 1.05rem;
+}
+
+.deck-label {
+    margin-top: 1.5rem;
+    color: var(--text-muted);
+    font-size: 1.05rem;
+}
+
+/* Peers */
+.peer-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.peer-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.peer {
+    display: block;
+    width: 3.5rem;
+    height: 3.5rem;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background-color: var(--ink);
+}
+
+.peer-name {
+    font-size: 1.05rem;
+    font-weight: 300;
+    color: var(--ink);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+    .stack-card,
+    .stack-card-img,
+    .peer {
+        transition: none;
+    }
+
+    .deck-detail.is-active {
+        animation: none;
+    }
+}
+
 
 /* Responsiveness */
 @media (max-width: 780px) {
     .site-header .nav-jump {
-        display: none;
-        padding: 0;
+        display: flexbox;
+        padding: 0.67rem;
     }
 
     .container {
@@ -460,7 +658,7 @@ h1, .brand {
 
     /* Icon, name, meta, then bio */
     .hero {
-        padding: 10rem 0 6.7rem;
+        padding: 4.67rem 0 6.7rem;
     }
 
     .hero-grid {
@@ -527,11 +725,60 @@ h1, .brand {
         white-space: nowrap;
     }
 
-    .experience {
+        .projects {
         padding: 3.5rem 0;
-        --date-col: 5rem;
-        --rule-col: 1.75rem;
+        --index-col: 1.75rem;
+        --rule-col: 1.5rem;
         --row-gap: 0.6rem;
-        --row-scale: 0.85rem;
     }
+
+        .projects {
+        padding: 3.5rem 0 5rem;
+    }
+
+    .projects-head h1 {
+        font-size: 2rem;
+    }
+
+        .deck {
+        --stack-lift: 2.25rem;
+    }
+
+    .stack-card {
+        padding: 0.75rem 0.9rem 0.8rem;
+    }
+
+    .stack-card-year {
+        font-size: 1.25rem;
+    }
+
+    .stack-card-img {
+        max-width: 90%;
+    }
+
+    .stack-card-foot {
+        gap: 0.75rem;
+    }
+
+    .stack-card-foot .social-link {
+        flex: 0 0 auto;
+    }
+
+    .stack-card-tech {
+        font-size: 0.85rem;
+    }
+
+    .peer-row {
+        gap: 1.1rem;
+    }
+
+    .peer {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    .peer-name {
+        font-size: 0.9rem;
+    }
+
 }
