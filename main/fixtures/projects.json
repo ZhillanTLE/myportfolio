@@ -1,0 +1,164 @@
+[
+  {
+    "model": "main.peer",
+    "pk": "0480e038-6036-4ec7-8f74-9acb3848dc7a",
+    "fields": {
+      "name": "Lefi",
+      "icon": "icons/peers/lefiicon.jpeg",
+      "url": null,
+      "order": 3
+    }
+  },
+  {
+    "model": "main.peer",
+    "pk": "28b2fef6-a661-435a-a0c0-7aa77e0df6cd",
+    "fields": {
+      "name": "Rania",
+      "icon": "icons/peers/niaicon.jpeg",
+      "url": null,
+      "order": 1
+    }
+  },
+  {
+    "model": "main.peer",
+    "pk": "4a979b97-0ea7-4d3f-b4b0-fd86a00b7171",
+    "fields": {
+      "name": "Tania",
+      "icon": "icons/peers/taniaicon.jpeg",
+      "url": null,
+      "order": 0
+    }
+  },
+  {
+    "model": "main.peer",
+    "pk": "4f3bd028-7738-4e1e-84a8-27fa9ad94c1e",
+    "fields": {
+      "name": "+34 Others",
+      "icon": "icons/peers/plusicon.jpeg",
+      "url": null,
+      "order": 8
+    }
+  },
+  {
+    "model": "main.peer",
+    "pk": "92df0850-f0d9-4ab3-8493-b384e50bbb07",
+    "fields": {
+      "name": "Zhillan",
+      "icon": "icons/peers/zhillanicon.jpeg",
+      "url": null,
+      "order": 0
+    }
+  },
+  {
+    "model": "main.peer",
+    "pk": "9d15a7e4-f968-494f-ac06-cd22ca652159",
+    "fields": {
+      "name": "Zayyan",
+      "icon": "icons/peers/zayyanicon.jpeg",
+      "url": null,
+      "order": 0
+    }
+  },
+  {
+    "model": "main.peer",
+    "pk": "d3e7f741-78f7-4465-b743-3ce5b83f22c9",
+    "fields": {
+      "name": "Bagas",
+      "icon": "icons/peers/bagasicon.jpeg",
+      "url": null,
+      "order": 4
+    }
+  },
+  {
+    "model": "main.peer",
+    "pk": "eaa9b08f-f729-4e3a-af01-5a05ee890b12",
+    "fields": {
+      "name": "Micguel",
+      "icon": "icons/peers/micguelicon.jpeg",
+      "url": null,
+      "order": 0
+    }
+  },
+  {
+    "model": "main.peer",
+    "pk": "eeb17c8d-f10a-4448-8223-04a6d963eda4",
+    "fields": {
+      "name": "Zhillan",
+      "icon": "icons/peers/zhillanicon.jpeg",
+      "url": null,
+      "order": 1
+    }
+  },
+  {
+    "model": "main.peer",
+    "pk": "f4baef45-c7f4-409a-8d3d-d03a70dca812",
+    "fields": {
+      "name": "Zayyan",
+      "icon": "icons/peers/zayyanicon.jpeg",
+      "url": null,
+      "order": 2
+    }
+  },
+  {
+    "model": "main.project",
+    "pk": "8d74644e-56b3-448b-839c-4b7da75cba3e",
+    "fields": {
+      "title": "Tinta",
+      "year": "2026",
+      "role": "Heads of Technical Product",
+      "description": "A platform that makes the writing process visible. TINTA logs how a student's assignment actually got written sessions, edits, events and surfaces anomalies for the lecturer to review, instead of scoring the finished text and guessing.",
+      "image": "img/projects/TintaSnapshot.jpeg",
+      "tech_stack": "Next.js, Supabase",
+      "repo_url": "https://github.com/TINTA-Gemastik/GEMASTIK-TINTA",
+      "live_url": null,
+      "order": 3,
+      "peers": [
+        "9d15a7e4-f968-494f-ac06-cd22ca652159",
+        "28b2fef6-a661-435a-a0c0-7aa77e0df6cd",
+        "eeb17c8d-f10a-4448-8223-04a6d963eda4"
+      ]
+    }
+  },
+  {
+    "model": "main.project",
+    "pk": "a97ae473-c04f-4a8f-831a-515ac166891a",
+    "fields": {
+      "title": "Windfall",
+      "year": "2026",
+      "role": "AI Engineer, PM, Fullstack Dev",
+      "description": "A multi-agent AI pipeline that rebuilds abandoned travel carts instead of discounting them.\r\n\r\nWhen a traveler abandons a booking, every N hours: three agents run in sequence: a Classifier reasons about who they are, a Searcher walks a rebuild ladder looking for a cheaper comparable trip, and a Notification Curator drafts the message.",
+      "image": "img/projects/WindfallSnapshot2.jpeg",
+      "tech_stack": "Next.js, Flask",
+      "repo_url": "https://github.com/ZhillanTLE/6EyesCOMPFEST",
+      "live_url": null,
+      "order": 1,
+      "peers": [
+        "eaa9b08f-f729-4e3a-af01-5a05ee890b12",
+        "4a979b97-0ea7-4d3f-b4b0-fd86a00b7171",
+        "92df0850-f0d9-4ab3-8493-b384e50bbb07"
+      ]
+    }
+  },
+  {
+    "model": "main.project",
+    "pk": "ab5344f8-a19e-47c6-bb24-4b06f6b7cfe0",
+    "fields": {
+      "title": "Arung's Website",
+      "year": "2025",
+      "role": "",
+      "description": "ARUNG is the 2025 student family at Fasilkom UI. The site is its front door: a batch directory you can search and filter by major or track, course materials, a shared calendar, and a photo archive of the year. Dressed in pixel type and window-chrome frames, because a cohort site should feel like something the cohort made, home-ish.",
+      "image": "img/projects/ArungSnapshot.jpeg",
+      "tech_stack": "N/A",
+      "repo_url": null,
+      "live_url": "https://arung.csui.dev/",
+      "order": 2,
+      "peers": [
+        "eeb17c8d-f10a-4448-8223-04a6d963eda4",
+        "f4baef45-c7f4-409a-8d3d-d03a70dca812",
+        "0480e038-6036-4ec7-8f74-9acb3848dc7a",
+        "d3e7f741-78f7-4465-b743-3ce5b83f22c9",
+        "4f3bd028-7738-4e1e-84a8-27fa9ad94c1e"
+      ]
+    }
+  }
+]
