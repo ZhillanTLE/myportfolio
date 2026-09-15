@@ -4,7 +4,8 @@
     if (!("IntersectionObserver" in window)) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const sections = document.querySelectorAll("main > section, #guestbook, #site-footer");
+    const TARGETS = "main > section, #guestbook, #site-footer";
+    const sections = document.querySelectorAll(TARGETS);
     const observer = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
             if (!entry.isIntersecting) return;
