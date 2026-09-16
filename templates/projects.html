@@ -1,28 +1,80 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <script>document.documentElement.className = "js";</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ name }} - Projects</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=8">
-</head>
-<body>
-    <header class="site-header">
-        <div class="container">
-            <nav class="nav-jump">
-                <a href="{% url 'main:show_main' %}">Profile</a>
-            </nav>
-            <nav class="nav-jump">
-                <a href="{% url 'main:show_projects' %}">Work</a>
-            </nav>
-        </div>
-    </header>
+{% block content %}
     <main>
+        <section class="experience" id="experience">
+            <div class="container">
+                <h2 class="section-title">Experience</h2>
+                <details class="role">
+                    <summary class="role-header">
+                        <span class="role-dates">JUL&ndash;AUG '26</span>
+                        <span class="role-rule" aria-hidden="true"></span>
+                        <h3 class="role-title">
+                            Product Management Intern @ Opsigo Asia
+                        </h3>
+                        <span class="role-chevron" aria-hidden="true"></span>
+                    </summary>
+                    <div class="role-body">
+                        <p class="role-org">Opsigo Asia &middot; Jakarta</p>
+                        <ul class="role-points">
+                            <li>Researched and shipped a consolidated multi-item cart, replacing the repeated search-and-compare cycle across flights, hotels, and rail with a single flow &middot; a projected 66.6% drop in admin work per itinerary.</li>
+                            <li>Led a High/Standard/Low fare-tiering feature that auto-ranks search results with QuickSelect partitioning, cutting manual price benchmarking and reducing SLA response time per item search by 75%.</li>
+                        </ul>
+                    </div>
+                </details>
+                <details class="role">
+                    <summary class="role-header">
+                        <span class="role-dates">FEB&ndash;NOW '26</span>
+                        <span class="role-rule" aria-hidden="true"></span>
+                        <h3 class="role-title">
+                            Manager of Website Development @ OH Fasilkom UI</h3>
+                        <span class="role-chevron" aria-hidden="true"></span>
+                    </summary>
+                    <div class="role-body">
+                        <p class="role-org">Open House Fasilkom UI &middot; Depok</p>
+                        <ul class="role-points">
+                            <li>Memecut IT Dev & UIUX</li>
+                            <li>Memasak PRD</li>
+                            <li>CLARITYYY INNN TECHNOLOGYYYY!!</li>
+                        </ul>
+                    </div>
+                </details>
+                <details class="role">
+                    <summary class="role-header">
+                        <span class="role-dates">MAY '26</span>
+                        <span class="role-rule" aria-hidden="true"></span>
+                        <h3 class="role-title">
+                            Technical Project Manager @ Tinta, a GEMASTIK project
+                        </h3>
+                        <span class="role-chevron" aria-hidden="true"></span>
+                    </summary>
+                    <div class="role-body">
+                        <p class="role-org">GEMASTIK 2026 &middot; Indonesia</p>
+                        <ul class="role-points">
+                            <li>I LOVE ZAYYAN AND NIA</li>
+                        <li>Served as Technical Product Manager, leading the technical architecture for a 3-person CS team building an academic writing integrity platform for Indonesian higher education</li>
+                        <li>Designed a full-stack system featuring role-based access control, real-time collaboration, and a process-basedwriting verification approach</li>
+                        </ul>
+                    </div>
+                </details>
+                <details class="role">
+                    <summary class="role-header">
+                        <span class="role-dates">OCT&ndash;DEC '25</span>
+                        <span class="role-rule" aria-hidden="true"></span>
+                        <h3 class="role-title">
+                            Head of UIUX @ ARUNG Fasilkom UI
+                        </h3>
+                        <span class="role-chevron" aria-hidden="true"></span>
+                    </summary>
+                    <div class="role-body">
+                        <p class="role-org">Website Angkatan Fasilkom UI 2025 &middot; Depok</p>
+                        <ul class="role-points">
+                        <li>Lead UIUX Team to research, plan, wireframe, and final design to complete Fasilkom UI 2025 Cohort's website serving 400+ cohort members</li>
+                        </ul>
+                    </div>
+                </details>
+            </div>
+        </section>
         <section class="projects" id="projects">
             <div class="container">
                 <div class="projects-head">
@@ -42,7 +94,7 @@
                             <div class="stack-card-shot">
                                 {% if project.image %}
                                     <img class="stack-card-img"
-                                         src="{% static project.image %}"
+                                         src="{{ project.image_src }}"
                                          alt="Screenshot of {{ project.title }}"
                                          draggable="false">
                                 {% endif %}
@@ -74,7 +126,7 @@
                                     {% for peer in project.peers.all %}
                                     <span class="peer-item" tabindex="0">
                                         <img class="peer"
-                                             src="{% static peer.icon %}"
+                                             src="{{ peer.icon_src }}"
                                              alt="{{ peer.name }}">
                                         <span class="peer-name">{{ peer.name }}</span>
                                     </span>
@@ -88,11 +140,6 @@
             </div>
         </section>
     </main>
-    <footer class="site-footer">
-        <div class="container">
-            <p>&copy; 2026 {{ name }}, {{ npm }} {{ study_program }}, {{ bio }}</p>
-        </div>
-    </footer>
 
     <script>
     (function () {
@@ -118,7 +165,7 @@
                 d.classList.toggle("is-active", i === active);
             });
         }
-
+        
         function advance(direction) {
             if (busy || n < 2) return;
             busy = true;
@@ -180,5 +227,4 @@
         layout();
     })();
     </script>
-</body>
-</html>
+{% endblock content %}

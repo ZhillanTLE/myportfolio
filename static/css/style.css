@@ -80,7 +80,7 @@ h1, .brand {
 
 /* Hero Section with CSS Grid */
 .hero {
-    padding: 10rem 0 5rem;
+    padding: 2rem 0 5rem;
 }
 
 .hero-grid {
@@ -383,7 +383,7 @@ h1, .brand {
 }
 
 .projects {
-    padding: 10rem 0 7rem;
+    padding: 2rem 0 7rem;
 }
 
 .projects-head {
@@ -400,10 +400,171 @@ h1, .brand {
     color: var(--text-muted);
     font-size: 1.05rem;
 }
+/* Add-project form: dark page, light card */
+.shell {
+    display: flex;
+    justify-content: center;
+    padding: 3.5rem 1rem 4rem;
+}
+
+.card {
+    width: 100%;
+    max-width: 520px;
+    padding: 2.25rem 2rem 2.5rem;
+    background: #fff;
+    color: #111;
+    border-radius: 4px;
+}
+
+.greeting {
+    text-align: center;
+    font-size: clamp(2rem, 6vw, 2.6rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+}
+
+.greeting span {
+    color: #9a9a9a;
+}
+
+.sub-greeting {
+    text-align: center;
+    font-size: 0.95rem;
+    margin-bottom: 1.75rem;
+}
+
+.field {
+    margin-bottom: 1.1rem;
+}
+
+.field > label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.field input,
+.field textarea {
+    width: 100%;
+    padding: 0.6rem 1rem;
+    border: 1.5px solid #8a8a8a;
+    border-radius: 999px;
+    background: #fff;
+    color: #111;
+    font: inherit;
+}
+
+.field textarea {
+    border-radius: 18px;
+    min-height: 150px;
+    resize: vertical;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+    color: #9a9a9a;
+}
+
+.field input:focus,
+.field textarea:focus {
+    outline: none;
+    border-color: #111;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* "New Collaborator" + "Photo drive URL" inputs with the + button beside them */
+.collab-input {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.collab-input button {
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1.5px solid #111;
+    border-radius: 50%;
+    background: #fff;
+    color: #111;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.collab-input button:hover {
+    background: #f2f2f2;
+}
+
+
+
+/* Peer checkboxes rendered as pill chips */
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+}
+
+.chips input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    padding: 0;
+    border: 0;
+}
+
+.chip {
+    display: inline-block;
+    padding: 0.3rem 1rem;
+    border: 1.5px solid #111;
+    border-radius: 999px;
+    background: #fff;
+    color: #111;
+    font-size: 0.95rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.chips input:checked + .chip {
+    background: var(--text-muted);
+}
+
+.chips input:focus-visible + .chip {
+    outline: 2px solid #111;
+    outline-offset: 2px;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+.submit {
+    padding: 0.7rem 1.4rem;
+    border: 0;
+    border-radius: 4px;
+    background: #111;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+
 
 /* Card deck */
 .deck {
-    max-width: 780px;
+    max-width: 570px;
     margin: 0 auto;
     --stack-lift: 3rem;     /* how far each card behind peeks up past the one in front */
     --stack-blur: 2px;      /* the "10%" blur on the screenshots behind */
@@ -415,7 +576,7 @@ h1, .brand {
 .deck-stack {
     position: relative;
     aspect-ratio: 3 / 2;
-    margin-top: calc(var(--stack-lift) * 2 + 2rem);   /* room for the two peeking cards */
+    margin-top: calc(var(--stack-lift) * 1.5 + 2rem);   /* room for the two peeking cards */
     outline: none;
     touch-action: pan-y;    /* horizontal drag is ours; vertical scroll stays the browser's */
 }

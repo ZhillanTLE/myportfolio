@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block meta %}
+    <title>Add Project - {{ name }}</title>
+{% endblock meta %}
+{% block content %}
+    <main>
+        <div class="shell">
+            <div class="card">
+                <h1 class="greeting"><span>Hi {{ name }}!</span> Tell me about your Project</h1>
+                <p class="sub-greeting">What did you cook again?</p>
+
+                <form method="post" action="{% url 'main:create_project' %}" novalidate>
+                    {% csrf_token %}
+                    {# Hidden default button so pressing Enter submits the project, not "+" #}
+                    <button type="submit" hidden aria-hidden="true" tabindex="-1"></button>
+
+                    <div class="row">
+                        {% include "components/form_field.html" with field=form.title %}
+                        {% include "components/form_field.html" with field=form.year %}
+                    </div>
+
+                    {% include "components/form_field.html" with field=form.role %}
+                    {% include "components/form_field.html" with field=form.image %}
+                    {% include "components/form_field.html" with field=form.tech_stack %}
+
+                    <div class="field">
+                        <label for="{{ form.new_peer.id_for_label }}">Builders*</label>
+                        <div class="collab-input">
+                            {{ form.new_peer }}
+                            {{ form.new_peer_icon }}
+                            <button type="submit" name="add_peer" aria-label="Add collaborator">+</button>
+                        </div>
+                        {% for error in form.new_peer_icon.errors %}
+                            <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                        <div class="chips">
+                            {% for peer in form.peers %}
+                                {{ peer.tag }}
+                                <label for="{{ peer.id_for_label }}" class="chip">{{ peer.choice_label }}</label>
+                            {% endfor %}
+                        </div>
+                        {% for error in form.peers.errors %}
+                            <p class="form-error">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    {% include "components/form_field.html" with field=form.repo_url %}
+                    {% include "components/form_field.html" with field=form.live_url %}
+                    {% include "components/form_field.html" with field=form.description %}
+
+                    <div class="actions">
+                        <button type="submit" class="submit">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+{% endblock content %}

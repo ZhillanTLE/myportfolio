@@ -1,5 +1,20 @@
+import re
 import uuid
 from django.db import models
+from django.templatetags.static import static
+
+DRIVE_ID = re.compile(r"drive\.google\.com/(?:file/d/|open\?id=|uc\?(?:.*&)?id=)([\w-]+)")
+
+def media_src(value):
+    """Turn a stored path or URL into something an <img src> can actually load."""
+    match = DRIVE_ID.search(value)
+    if match:
+        # Drive share link serves a web page, not the image; the thumbnail endpoint serves the file
+        return f"https://drive.google.com/thumbnail?id={match.group(1)}&sz=w1000"
+    if value.startswith("http"):
+        return value
+    return static(value)
+
 
 class Experience(models.Model):
     EXPERIENCE_CHOICES = [
@@ -41,6 +56,11 @@ class Peer(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def icon_src(self):
+        return media_src(self.icon)
+
+
 
 class Project(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -69,5 +89,11 @@ class Project(models.Model):
         return self.title
 
     @property
+    def image_src(self):
+        return media_src(self.image)
+
+    
+    @property
     def tech_list(self):
-        return [t.strip() for t in self.tech_stack.split(",") if t.strip()]
+        return [tech.strip() for tech in self.tech_stack.split(",") if tech.strip()]
+
