@@ -48,7 +48,7 @@ def parse_calendar(html):
 
 def fetch_contributions():
     request = urllib.request.Request(CALENDAR_URL, headers={"User-Agent": "myportfolio-footer"})
-    with urllib.request.urlopen(request, timeout=5) as response:
+    with urllib.request.urlopen(request, timeout=8) as response:
         return parse_calendar(response.read().decode("utf-8", "replace"))
 
 
