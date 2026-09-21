@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block meta %}
+    <title>Add Peer - {{ name }}</title>
+{% endblock meta %}
+{% block content %}
+<main>
+    <div class="shell">
+        <div class="card">
+            <h1 class="greeting"><Span>Hi!</Span> Add Yourself</h1>
+            <p class = "sub-greeting">Name, face, and something to say.</p>
+
+            <form method="post" action="{%url 'main:create_peer'%}" novalidate>
+                {% csrf_token %}
+
+                {% include "components/form_field.html" with field=form.name %}
+                {% include "components/form_field.html" with field=form.icon %}
+                {% include "components/form_field.html" with field=form.message %}
+                
+                <div class="actions">
+                    <button type="submit" class="submit">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+{% endblock content %}

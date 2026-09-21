@@ -78,7 +78,10 @@
         <section class="projects" id="projects">
             <div class="container">
                 <div class="projects-head">
-                    <h1>Recent Projects</h1>
+                    <div class="projects-title">
+                        <h1>Recent Projects</h1>
+                        <a class="projects-to-add" href="{% url 'main:create_project' %}">+</a>
+                    </div>
                     <p class="projects-sub">proof(s) I don't sleep</p>
                 </div>
 
@@ -132,8 +135,30 @@
                                     </span>
                                     {% endfor %}
                                 </div>
-                            {% endif %}
+                                {% endif %}
+                                <div class="deck-actions">
+                                    <a class="social-link" href="{% url 'main:update_project' project.id %}">Edit</a>
+                                    {% include "components/project_delete_modal.html" with project=project %}
+                                </div>
                         </article>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="peers" id="peers">
+            <div class="container">
+                <div class="peers-title">
+                    <h2 class="section-title">Peers</h2>
+                    <a class="peers-to-add" href="{% url 'main:create_peer' %}">+ Add Yourself!</a>
+                </div>
+                <div class="marquee marquee-notes" data-rows="1" data-speed="28" aria-label="Peers">
+                    <div class="marquee-track">
+                        {% for peer in peer_list %}
+                            <span class="peer-tag">
+                                <img class="peer-tag-avatar" src="{{ peer.icon_src }}" alt="">
+                                {{ peer.name }}
+                            </span>
                         {% endfor %}
                     </div>
                 </div>
@@ -227,4 +252,72 @@
         layout();
     })();
     </script>
+    <script>
+    /* Marquee: each .marquee gets data-rows copies of its one track, every row scrolls right→left. */
+    (function () {
+        var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var SPEEDS = [1, 0.65, 1.3];
+
+        Array.prototype.slice.call(document.querySelectorAll(".marquee")).forEach(function (marquee) {
+            var first = marquee.querySelector(".marquee-track");
+            if (!first || !first.children.length) return;
+
+            var rows = parseInt(marquee.getAttribute("data-rows") || "1", 10);
+            var base = parseFloat(marquee.getAttribute("data-speed") || "40");
+
+            var tracks = [first];
+            for (var i = 1; i < rows; i++) {
+                var copy = first.cloneNode(true);
+                copy.setAttribute("aria-hidden", "true");
+                marquee.appendChild(copy);
+                tracks.push(copy);
+            }
+
+            if (reduce) return;
+
+            var states = tracks.map(function (track, i) {
+                var originals = Array.prototype.slice.call(track.children);
+                var count = originals.length;
+                do {
+                    originals.forEach(function (el) {
+                        var c = el.cloneNode(true);
+                        c.setAttribute("aria-hidden", "true");
+                        Array.prototype.slice.call(c.querySelectorAll("a")).forEach(function (a) { a.tabIndex = -1; });
+                        track.appendChild(c);
+                    });
+                } while (track.offsetWidth < marquee.clientWidth * 2);
+
+                var cycle = track.children[count].offsetLeft - track.children[0].offsetLeft;
+                var state = {
+                    track: track,
+                    cycle: cycle,
+                    speed: base * SPEEDS[i % SPEEDS.length],
+                    x: -cycle * (i / rows),
+                    paused: false
+                };
+                track.addEventListener("mouseenter", function () { state.paused = true; });
+                track.addEventListener("mouseleave", function () { state.paused = false; });
+                track.addEventListener("focusin",  function () { state.paused = true; });
+                track.addEventListener("focusout", function () { state.paused = false; });
+                return state;
+            });
+
+            var last = performance.now();
+            function tick(now) {
+                var dt = Math.min((now - last) / 1000, 0.1);
+                last = now;
+                states.forEach(function (s) {
+                    if (!s.paused) {
+                        s.x -= s.speed * dt;
+                        if (s.x <= -s.cycle) s.x += s.cycle;
+                    }
+                    s.track.style.transform = "translateX(" + s.x + "px)";
+                });
+                requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        });
+    })();
+    </script>
+
 {% endblock content %}

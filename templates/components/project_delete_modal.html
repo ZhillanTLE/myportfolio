@@ -1,0 +1,22 @@
+<button type="button"
+        class="social-link is-danger"
+        popovertarget="confirm-{{ project.id }}">Delete</button>
+
+<div id="confirm-{{ project.id }}"
+     class="confirm"
+     popover
+     role="dialog"
+     aria-labelledby="confirm-title-{{ project.id }}">
+    <h3 id="confirm-title-{{ project.id }}">Delete this project?</h3>
+    <p><strong>{{ project.title }}</strong> will be removed from your portfolio. Its collaborators stay in Peers.</p>
+    <div class="confirm-actions">
+        <button type="button"
+                class="social-link"
+                popovertarget="confirm-{{ project.id }}"
+                popovertargetaction="hide">Keep it</button>
+        <form method="post" action="{% url 'main:delete_project' project.id %}">
+            {% csrf_token %}
+            <button type="submit" class="social-link is-danger">Yes, delete</button>
+        </form>
+    </div>
+</div>

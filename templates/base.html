@@ -22,6 +22,13 @@
             </nav>
         </div>
     </header>
+    {% if messages %}
+    <div class="toast-row">
+        {% for message in messages %}
+            <div class="toast" role="status">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
     {% block content %} {% endblock content %}
 
     <footer class="site-footer">
@@ -29,5 +36,17 @@
             <p>&copy; 2026 {{ name }}, {{ npm }} {{ study_program }}, {{ bio}} </p>
         </div>
     </footer>
+    <script>
+    (function () {
+        Array.prototype.slice.call(document.querySelectorAll(".toast")).forEach(function (toast) {
+            function dismiss() {
+                toast.style.opacity = "0";                       // fades via the existing transition
+                setTimeout(function () { toast.remove(); }, 300); // then take it out of the page
+            }
+            toast.addEventListener("mouseenter", dismiss);
+            toast.addEventListener("click", dismiss);            // touch screens have no hover
+        });
+    })();
+    </script>
   </body>
   </html>

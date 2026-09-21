@@ -2,12 +2,13 @@ from django.forms import (
     CharField,
     CheckboxSelectMultiple,
     ModelForm,
+    NumberInput,
     Textarea,
     TextInput,
     URLField,
     URLInput,
 )
-from main.models import Project
+from main.models import Project, Peer
 
 
 class ProjectForm(ModelForm):
@@ -18,7 +19,7 @@ class ProjectForm(ModelForm):
     )
     new_peer_icon = URLField(
         required=False,
-        widget=URLInput(attrs={"placeholder": "Photo URL"}),
+        widget=URLInput(attrs={"placeholder": "Photo drive URL"}),
     )
 
 
@@ -34,6 +35,7 @@ class ProjectForm(ModelForm):
             "repo_url",
             "live_url",
             "description",
+            "order",
         ]
 
         labels = {
@@ -46,6 +48,7 @@ class ProjectForm(ModelForm):
             "repo_url": "Repository Link",
             "live_url": "Live URL",
             "description": "Description",
+            "order": "Display order",
         }
 
         widgets = {
@@ -58,6 +61,7 @@ class ProjectForm(ModelForm):
             "repo_url": URLInput(attrs={"placeholder": "https://drive.google.com/..."}),
             "live_url": URLInput(attrs={"placeholder": "https://.."}),
             "description": Textarea(attrs={"placeholder": "Yapping aja lek", "rows": 6}),
+            "order": NumberInput(attrs={"min":0, "placeholders":"0 = first"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -65,3 +69,23 @@ class ProjectForm(ModelForm):
         for name in ("role", "image", "peers"):
             self.fields[name].required = True
         self.fields["tech_stack"].required = False
+
+class PeerForm(ModelForm):
+    class Meta:
+        model = Peer    
+        fields = ["name", "icon", "message"]
+
+        labels = {
+            "name" : "Name",
+            "icon" : "Profile Picture",
+            "message" : "Message",
+        }
+
+        widgets = {
+            "name" : TextInput(attrs={"placeholder":"Your Name", "maxlength":100}),
+            "icon" : TextInput(attrs={"placeholder":"https:drive.google.com/...", "maxlength":256}),
+            "message" : TextInput(attrs={"placeholder": "Message", "maxlength":256}),
+        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["message"].required = True

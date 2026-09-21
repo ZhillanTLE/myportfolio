@@ -49,6 +49,9 @@ class Peer(models.Model):
     )
     url = models.URLField(blank=True, null=True)
     order = models.PositiveBigIntegerField(default = 0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    message = models.TextField(blank=True, default="")
+    show_in_peers = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["order", "name"]

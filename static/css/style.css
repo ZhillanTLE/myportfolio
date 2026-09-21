@@ -256,7 +256,7 @@ h1, .brand {
 }
 
 .experience {
-    padding: 7rem 0 7rem;
+    padding: 7rem 0 2rem;
     --date-col: 8rem;
     --rule-col: 5rem;
     --row-gap: 1rem;
@@ -383,12 +383,36 @@ h1, .brand {
 }
 
 .projects {
-    padding: 2rem 0 7rem;
+    padding: 2rem 0 2rem;
 }
 
 .projects-head {
     text-align: center;
 }
+
+.projects-title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.projects-to-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: #fff;
+    color: var(--paper);
+    border-radius: 5%;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.5rem;      /* size of the + — bump to 1.75rem if you want it bigger */
+    line-height: 1;
+}
+
+
 
 .projects-head h1 {
     font-size: 2.25rem;
@@ -732,6 +756,110 @@ h1, .brand {
     font-size: 1.05rem;
 }
 
+/* Edit / delete row under the deck detail */
+.deck-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+button.social-link {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.social-link.is-danger {
+    color: #f85149;
+    border-color: rgba(248, 81, 73, 0.4);
+}
+
+.social-link.is-danger:hover {
+    color: var(--paper);
+    background-color: #f85149;
+    border-color: #f85149;
+}
+
+/* Delete confirmation (native popover) */
+.confirm {
+    width: min(100% - 2rem, 440px);
+    margin: auto;
+    padding: 1.5rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--button);
+    color: var(--ink);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5);
+}
+
+.confirm::backdrop {
+    background: rgba(0, 0, 0, 0.62);
+}
+
+.confirm h3 {
+    font-family: "Space Grotesk", -apple-system, sans-serif;
+    font-size: 1.25rem;
+    margin: 0 0 0.5rem;
+}
+
+.confirm p {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.confirm strong {
+    color: var(--ink);
+}
+
+.confirm-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    margin-top: 1.5rem;
+}
+
+.confirm-actions form {
+    margin: 0;
+}
+
+/* Django messages, rendered by base.html */
+.toast-row {
+    position: fixed;
+    bottom: 5rem;
+    left: 0rem;
+    right: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.toast {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 0.9rem;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+    animation: toast-out 0.4s ease 4s forwards;
+
+}
+
+@keyframes toast-out {
+    to { opacity: 0; visibility: hidden; }
+}
+
+
 .deck-label {
     margin-top: 1.5rem;
     color: var(--text-muted);
@@ -739,6 +867,22 @@ h1, .brand {
 }
 
 /* Peers */
+.peers {
+    padding: 2rem 0rem 5rem;
+}
+
+.peers-title {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.peers-title .section-title {
+    margin-bottom: 0;
+}
+
 .peer-row {
     display: flex;
     flex-wrap: wrap;
@@ -768,6 +912,76 @@ h1, .brand {
     font-weight: 300;
     color: var(--ink);
 }
+
+.peers-to-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.9rem;
+    background: #fff;
+    color : #111;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+/* Peers card */
+.marquee {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+
+.marquee-track {
+    display: flex;
+    gap: 0.25rem;
+    width: max-content;
+    will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .marquee { overflow-x: auto; -webkit-mask-image: none; mask-image: none; }
+}
+
+
+.marquee--tags { gap: 0.5rem; }
+.marquee--tags .marquee-track { gap: 0.5rem; }
+
+.peer-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 1rem 0.5rem 0.67rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--ink);
+    font-size: 0.95rem;
+    white-space: nowrap;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.peer-tag:hover {
+    border-color: var(--ink);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.peer-tag-avatar {
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #d9d9d9;
+    filter: grayscale(1);
+    transition: filter 0.2s ease;
+}
+
+.peer-tag:hover .peer-tag-avatar { filter: none; }
+
 
 
 @media (prefers-reduced-motion: reduce) {

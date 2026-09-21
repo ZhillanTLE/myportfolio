@@ -1,15 +1,23 @@
 {% extends 'base.html' %}
 {% block meta %}
-    <title>Add Project - {{ name }}</title>
+<title>{% if project %}Edit {{ project.title }}{% else %}Add Project{% endif %} - {{ name }}</title>
 {% endblock meta %}
 {% block content %}
     <main>
         <div class="shell">
             <div class="card">
-                <h1 class="greeting"><span>Hi {{ name }}!</span> Tell me about your Project</h1>
+                {% if project %}
+                    <h1 class="greeting"><span>Editing</span> {{ project.title }}</h1>
+                    <p class="sub-greeting">Change what you need, then save.</p>
+                {% else %}
+                    <h1 class="greeting"><span>Hi {{ name }}!</span> Tell me about your Project</h1>
+                    <p class="sub-greeting">What did you cook again?</p>
+                {% endif %}
                 <p class="sub-greeting">What did you cook again?</p>
 
-                <form method="post" action="{% url 'main:create_project' %}" novalidate>
+                <form method="post" 
+                    action="{% if project %}{% url 'main:update_project' project.id %}{% else %}{% url 'main:create_project' %}{% endif %}"
+                    novalidate>
                     {% csrf_token %}
                     {# Hidden default button so pressing Enter submits the project, not "+" #}
                     <button type="submit" hidden aria-hidden="true" tabindex="-1"></button>
@@ -47,9 +55,10 @@
                     {% include "components/form_field.html" with field=form.repo_url %}
                     {% include "components/form_field.html" with field=form.live_url %}
                     {% include "components/form_field.html" with field=form.description %}
+                    {% include "components/form_field.html" with field=form.order %}
 
                     <div class="actions">
-                        <button type="submit" class="submit">Submit</button>
+                        <button type="submit" class="submit">{% if project %}Save changes{% else %}Submit{% endif %}</button>
                     </div>
                 </form>
             </div>

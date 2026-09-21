@@ -7,8 +7,8 @@ admin.site.register(Experience)
 
 @admin.register(Peer)
 class PeerAdmin(admin.ModelAdmin):
-    list_display = ("name", "icon", "order")
-    list_editable = ("order",)
+    list_display = ("name", "icon", "order", "show_in_peers")
+    list_editable = ("order","show_in_peers")
     search_fields = ("name",)
 
 
