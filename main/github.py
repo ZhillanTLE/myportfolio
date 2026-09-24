@@ -14,7 +14,7 @@ CALENDAR_URL = f"https://github.com/users/{USERNAME}/contributions"
 
 CACHE_KEY = "github-contributions"
 CACHE_SECONDS = 6 * 60 * 60     # the calendar only moves a few times a day
-RETRY_SECONDS = 10 * 60         # after a failed fetch, don't ask again on every page view
+RETRY_SECONDS = 15 * 60         # after a failed fetch, don't ask again on every page view
 
 TOTAL = re.compile(r"([\d,]+)\s+contributions?\s+in the last year")
 DAY_CELL = re.compile(r"<td[^>]*\bContributionCalendar-day\b[^>]*>")
