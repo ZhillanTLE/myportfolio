@@ -12,7 +12,7 @@ def merge_duplicates(apps, schema_editor):
     for peers in by_name.values():
         if len(peers) < 2:
             continue
-        # The record on the most teams wins; ties go to the oldest
+        # Keep whoever is on the most teams; created_at order breaks ties toward the oldest
         keeper = max(peers, key=lambda peer: peer.projects.count())
         for duplicate in peers:
             if duplicate.pk == keeper.pk:
