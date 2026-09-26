@@ -2,6 +2,7 @@ import re
 import uuid
 from django.db import models
 from django.templatetags.static import static
+from django.contrib.auth.models import User
 
 DRIVE_ID = re.compile(r"drive\.google\.com/(?:file/d/|open\?id=|uc\?(?:.*&)?id=)([\w-]+)")
 
@@ -84,6 +85,7 @@ class Project(models.Model):
     repo_url = models.URLField(blank=True, null=True)
     live_url = models.URLField(blank=True, null=True)
     order = models.PositiveIntegerField(default=0)
+    starred_by = models.ManyToManyField(User, related_name="starred_project", blank=True)
 
     class Meta:
         ordering = ["order", "-year"]

@@ -7,7 +7,11 @@ from main.views import (
     update_project, 
     delete_project, 
     get_projects_json, 
-    get_projects_xml
+    get_projects_xml,
+    register,
+    login_user,
+    logout_user,
+    toggle_star,
 )
 app_name = 'main'
 
@@ -20,4 +24,8 @@ urlpatterns = [
     path('api/projects/', get_projects_json, name="get_projects_json"),
     path('api/projects/xml/', get_projects_xml, name="get_projects_xml"),
     path('peers/add/', create_peer, name="create_peer"),
+    path("register/", register, name="register"),
+    path("login/", login_user, name="login"),
+    path("logout/", logout_user, name="logout"),
+    path("projects/<uuid:project_id>/star/", toggle_star, name="toggle_star"),
 ]

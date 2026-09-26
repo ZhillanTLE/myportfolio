@@ -80,7 +80,9 @@
                 <div class="projects-head">
                     <div class="projects-title">
                         <h1>Recent Projects</h1>
+                        {% if user.is_superuser %}
                         <a class="projects-to-add" href="{% url 'main:create_project' %}">+</a>
+                        {% endif %}
                     </div>
                     <p class="projects-sub">proof(s) I don't sleep</p>
                 </div>
@@ -137,8 +139,11 @@
                                 </div>
                                 {% endif %}
                                 <div class="deck-actions">
+                                    {% include "components/project_star.html" with project=project %}
+                                    {% if user.is_superuser %}
                                     <a class="social-link" href="{% url 'main:update_project' project.id %}">Edit</a>
                                     {% include "components/project_delete_modal.html" with project=project %}
+                                    {% endif %}
                                 </div>
                         </article>
                         {% endfor %}

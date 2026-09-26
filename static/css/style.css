@@ -78,7 +78,7 @@ h1, .brand {
     display: none;
 }
 
-/* Hero Section with CSS Grid */
+/* Hero Section with CSS Gridfkicker */
 .hero {
     padding: 2rem 0 5rem;
 }
@@ -982,6 +982,28 @@ button.social-link {
 
 .peer-tag:hover .peer-tag-avatar { filter: none; }
 
+/* Star */
+.star-form {
+    display: inline;
+}
+
+.button-star {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--ink);
+}
+
+.button-star.is-starred {
+    background: var(--accent);
+}
+
+.star-count {
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.25);
+    font-size: 0.8rem;
+}
 
 
 @media (prefers-reduced-motion: reduce) {
