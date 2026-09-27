@@ -16,6 +16,7 @@
     --button: #171717;
     --button-background: #585858;
     --mention: #0af;
+    --star: #e3b341;
 }
 
 html {
@@ -69,9 +70,28 @@ h1, .brand {
 }
 
 .site-header nav a {
-    color: var(--ink);
+    color: var(--text-muted);
     text-decoration: none;
     font-size: 0.95rem;
+    transition: color 0.2s ease;
+}
+
+.site-header nav a:hover,
+.site-header nav a.is-active {
+    color: var(--ink);
+}
+
+.nav-role {
+    margin-left: 0.35rem;
+    padding: 0.05rem 0.5rem;
+    border: 1px solid var(--accent-dark);
+    border-radius: 999px;
+    color: var(--accent-dark);
+    font-size: 0.62rem;
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
 }
 
 .ui-abbr {
@@ -113,7 +133,7 @@ h1, .brand {
 }
 
 .hero-identity h1 {
-    font-size: clamp(3rem, 2rem);
+    font-size: clamp(3rem, 9vw, 5.5rem);
     line-height: 0.88;
     letter-spacing: -0.04em;
     text-transform:lowercase;
@@ -987,22 +1007,87 @@ button.social-link {
     display: inline;
 }
 
-.button-star {
+/* Same shape as .social-link, gold when starred */
+.star {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    background: var(--ink);
+    gap: 0.5rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--button-background);
+    border-radius: 6px;
+    background: var(--button);
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
 }
 
-.button-star.is-starred {
-    background: var(--accent);
+.star-icon {
+    color: var(--text-muted);
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.star:hover .star-icon,
+.star.is-starred .star-icon {
+    color: var(--star);
+}
+
+.star.is-starred {
+    border-color: var(--star);
+}
+
+.star.is-starred .star-icon {
+    transform: scale(1.15);
 }
 
 .star-count {
     padding: 0.05rem 0.4rem;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.25);
+    background: var(--accent);
     font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.deck-count {
+    margin-bottom: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.22em;
+}
+
+/* 403 page */
+.denied {
+    padding: 5rem 1.5rem 7rem;
+}
+
+.denied h1 {
+    font-size: clamp(3rem, 9vw, 5.5rem);
+    line-height: 0.88;
+    letter-spacing: -0.04em;
+    margin-bottom: 1.5rem;
+}
+
+.denied .social-links {
+    margin-top: 1.5rem;
+}
+
+/* Form errors and the login/register action row */
+.form-error {
+    margin-top: 0.35rem;
+    color: #cf222e;
+    font-size: 0.85rem;
+}
+
+.actions--split {
+    justify-content: space-between;
+    align-items: center;
+}
+
+.actions--split a {
+    color: #111;
+    font-size: 0.9rem;
 }
 
 

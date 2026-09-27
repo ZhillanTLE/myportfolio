@@ -80,7 +80,7 @@
                 <div class="projects-head">
                     <div class="projects-title">
                         <h1>Recent Projects</h1>
-                        {% if user.is_superuser %}
+                        {% if perms.main.add_project %}
                         <a class="projects-to-add" href="{% url 'main:create_project' %}">+</a>
                         {% endif %}
                     </div>
@@ -123,9 +123,10 @@
 
                     <div class="deck-details">
                         {% for project in project_list %}
-                        <article class="deck-detail{% if forloop.first %} is-active{% endif %}">
+                        <article class="deck-detail{% if forloop.first %} is-active{% endif %}" id="project-{{ project.id }}">
+                            <p class="deck-count">{{ forloop.counter }} / {{ project_list|length }}</p>
                             <h2 class="deck-title">{{ project.title }}</h2>
-                            <p class="deck-description">{{ project.description }}</p>
+                            <p class="deck-description">{{ project.description|linebreaksbr }}</p>
                             {% if project.peers.all %}
                                 <div class="peer-row">
                                     {% for peer in project.peers.all %}
@@ -140,8 +141,10 @@
                                 {% endif %}
                                 <div class="deck-actions">
                                     {% include "components/project_star.html" with project=project %}
-                                    {% if user.is_superuser %}
+                                    {% if perms.main.change_project %}
                                     <a class="social-link" href="{% url 'main:update_project' project.id %}">Edit</a>
+                                    {% endif %}
+                                    {% if perms.main.delete_project %}
                                     {% include "components/project_delete_modal.html" with project=project %}
                                     {% endif %}
                                 </div>
@@ -180,7 +183,7 @@
         var n = cards.length;
         if (!n) return;
 
-        var active = 0;
+        var active = Math.max(0, details.findIndex(function (d) { return "#" + d.id === location.hash; }));
         var SWIPE_PX = 90;     // drag further than this to commit the swipe
         var LEAVE_MS = 400;    // must match the .stack-card transition duration in CSS
         var busy = false;

@@ -13,7 +13,6 @@
                     <h1 class="greeting"><span>Hi {{ name }}!</span> Tell me about your Project</h1>
                     <p class="sub-greeting">What did you cook again?</p>
                 {% endif %}
-                <p class="sub-greeting">What did you cook again?</p>
 
                 <form method="post" 
                     action="{% if project %}{% url 'main:update_project' project.id %}{% else %}{% url 'main:create_project' %}{% endif %}"

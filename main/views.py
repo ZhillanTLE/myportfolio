@@ -14,6 +14,11 @@ import datetime
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 
+from django.urls import reverse
+from django.views.decorators.http import require_POST
+from django.utils.http import url_has_allowed_host_and_scheme
+
+
 def show_main(request):
     last_login = request.COOKIES.get('last_login', 'No active login session / Cookie not found.')
     context = {
@@ -45,16 +50,20 @@ def _filtered_projects(request):
     return projects
 
 
+# starred_by is left out on purpose: serialized, it lists every starrer's username
+PUBLIC_FIELDS = ("title", "year", "role", "description", "image",
+                 "tech_stack", "repo_url", "live_url", "order", "peers")
+
 def get_projects_json(request):
     return HttpResponse(
-        serializers.serialize("json", _filtered_projects(request), use_natural_foreign_keys=True),
+        serializers.serialize("json", _filtered_projects(request), fields=PUBLIC_FIELDS),
         content_type="application/json",
     )
 
 
 def get_projects_xml(request):
     return HttpResponse(
-        serializers.serialize("xml", _filtered_projects(request), user_natural_foreign_key=True),
+        serializers.serialize("xml", _filtered_projects(request), fields=PUBLIC_FIELDS),
         content_type="application/xml",
     )
 
@@ -117,21 +126,24 @@ def _project_form_view(request, project=None):
     }
     return render(request, "projects_form.html", context)
 
+@login_required(login_url="/login/")
 def update_project(request, project_id):
+    if not request.user.has_perm("main.change_project"):
+        raise PermissionDenied("Editing projects is for editors.")
     project = get_object_or_404(Project, pk=project_id)
     return _project_form_view(request, project)
 
 # Create and Update projects
 @login_required(login_url="/login/")
 def create_project(request):
-    if not request.user.is_superuser:
-        raise PermissionDenied
+    if not request.user.has_perm("main.add_project"):
+        raise PermissionDenied("Adding projects is for editors.")
     return _project_form_view(request)
 
 @login_required(login_url="/login/")
 def delete_project(request, project_id):
-    if not request.user.is_useruser:
-        raise PermissionDenied
+    if not request.user.has_perm("main.delete_project"):
+        raise PermissionDenied("Only the admin can delete projects.")
     project = get_object_or_404(Project, pk=project_id)
     if request.method == "POST":
         title = project.title
@@ -168,23 +180,26 @@ def register(request):
         return redirect("main:login")
 
     context = {
-        "name" : "Burhan",
         "form" : form,
     }
     return render(request, "register.html", context)
 
 def login_user(request):
     form = AuthenticationForm(request, data=request.POST or None)
+    next_url = request.POST.get("next") or request.GET.get("next", "")
+    
     if request.method == "POST" and form.is_valid():
         user = form.get_user()
         login(request, user)
-        response = redirect("main:show_main")
+        if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+            next_url = "main:show_main"
+        response = redirect(next_url)
         response.set_cookie('last_login', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        return redirect("main:show_main")
+        return response
 
     context = {
-        "name" : "Burhan",
         "form" : form,
+        "next" : next_url,
     }
     return render(request, "login.html", context)
 
@@ -195,6 +210,7 @@ def logout_user(request):
     return response
 
 @login_required(login_url="/login/")
+@require_POST
 def toggle_star(request, project_id):
     project = get_object_or_404(Project, pk = project_id)
     if request.method == "POST":
@@ -203,4 +219,5 @@ def toggle_star(request, project_id):
         else:
             project.starred_by.add(request.user)
 
-    return redirect("main:show_projects")
+    # Back to the same card instead of the first one
+    return redirect(reverse("main:show_projects") + f"#project-{project.id}")

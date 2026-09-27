@@ -4,30 +4,24 @@
 {% endblock meta %}
 {% block content %}
     <main>
-        <section class="experience-section">
-            <div class="container">
-                <h1>Login</h1>
-                {% for message in messages %}
-                    <p class="form-message">{{ message }}</p>
-                {% endfor %}
-                <form method="post" action="{% url 'main:login' %}" class="project-form">
+        <div class="shell">
+            <div class="card">
+                <h1 class="greeting"><span>Hey!</span> Log in</h1>
+                <p class="sub-greeting">{% if next %}You'll land back where you were.{% else %}Stars need an account.{% endif %}</p>
+                <form method="post" action="{% url 'main:login' %}" novalidate>
                     {% csrf_token %}
-                    {% for field in form %}
-                        <div class="form-group">
-                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                            {{ field }}
-                            {% for error in field.errors %}
-                                <p class="form-error">{{ error }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endfor %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                    {% include "components/form_field.html" with field=form.username %}
+                    {% include "components/form_field.html" with field=form.password %}
                     {% for error in form.non_field_errors %}
                         <p class="form-error">{{ error }}</p>
                     {% endfor %}
-                    <button type="submit" class="button">Login</button>
+                    <div class="actions actions--split">
+                        <a href="{% url 'main:register' %}">No account? Register</a>
+                        <button type="submit" class="submit">Log in</button>
+                    </div>
                 </form>
-                <p>No account yet? <a href="{% url 'main:register' %}">Register here</a>.</p>
             </div>
-        </section>
+        </div>
     </main>
 {% endblock content %}

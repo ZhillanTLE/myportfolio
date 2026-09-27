@@ -1,10 +1,18 @@
+{% if user.is_authenticated %}
 <form method="post" action="{% url 'main:toggle_star' project.id %}" class="star-form">
     {% csrf_token %}
     <button type="submit"
-            class="button button-star{% if user in project.starred_by.all %} is-starred{% endif %}"
-            title="{% if project.starred_by.all %}Starred by {{ project.starred_by.all|join:', ' }}{% else %}Be the first to star{% endif %}">
-        <span aria-hidden="true">★</span>
-        {% if user in project.starred_by.all %}Unstar{% else %}Star{% endif %}
+            class="star{% if user in project.starred_by.all %} is-starred{% endif %}"
+            aria-pressed="{% if user in project.starred_by.all %}true{% else %}false{% endif %}">
+        <span class="star-icon" aria-hidden="true">★</span>
+        {% if user in project.starred_by.all %}Starred{% else %}Star{% endif %}
         <span class="star-count">{{ project.starred_by.count }}</span>
     </button>
 </form>
+{% else %}
+<a class="star" href="{% url 'main:login' %}?next={{ request.path }}">
+    <span class="star-icon" aria-hidden="true">★</span>
+    Log in to star
+    <span class="star-count">{{ project.starred_by.count }}</span>
+</a>
+{% endif %}
