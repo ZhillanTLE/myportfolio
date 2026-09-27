@@ -43,3 +43,18 @@
     'makemigrations' scans models.py files for any changes (additions, deletions, modifications) and generates a new migration file.
 
     'migrate' reads the migration files created by makemigrations and applies them to the actual database to update its table and columns. It also records what it applied in django_migrations table, so re-running doesnt re-apply anything.
+
+### Assignment 3's Reflection
+
+1. 
+    We use Django’s ModelForm instead of creating HTML forms manually in ordere to build scalable systems when we want to add another form. This also stands along with SRP (Single Responsibility Principle) to separate the logic of HTML, and logic of forms.
+
+    Additionally, It is necessary to add {% csrf token %} Because attackers cannot easily guess or generate the secure token, so their forged requests will be rejected by the server.
+
+
+2. 
+   JSON (JavaScript Object Notation) is preferred over XML (Extensible Markup Language) in modern web development because it is lighter, faster to parse, and **natively** integrates with JavaScript. While XML was once the enterprise standard for data exchange, JSON has become the default choice for modern web applications, Single-Page Applications (SPAs), and RESTful APIs.
+
+
+3. 
+    The view runs QuerySet through serializers.serialize("json", ...), which extracts only the field values from each Project and converts them into JSON string. It will then return it in an HttpResponse with content_type="application/json", because a model instance is a live Python object (methods, database connection, memory address) that cannot be sent over HTTP, whereas JSOn is plain text that any client can parse.
