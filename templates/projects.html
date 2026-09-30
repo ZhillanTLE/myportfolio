@@ -81,76 +81,51 @@
                     <div class="projects-title">
                         <h1>Recent Projects</h1>
                         {% if perms.main.add_project %}
-                        <a class="projects-to-add" href="{% url 'main:create_project' %}">+</a>
+                        <button type="button"
+                                class="button project-add-button"
+                                popovertarget="add-project-modal">
+                            <span aria-hidden="true">+</span>
+                        Add Project
+                        </button>
                         {% endif %}
                     </div>
                     <p class="projects-sub">proof(s) I don't sleep</p>
+
+                    <form id="project-search-form" class="project-search">
+                        <input type="search"
+                               id="search-input"
+                               name="title"
+                               value="{{ title_query }}"
+                               placeholder="Search by project name"
+                               class="project-search__input"
+                               aria-label="Search by project name">
+                        <button type="submit" class="social-link">Search</button>
+                    </form>
                 </div>
 
-                <div class="deck">
+                <!-- Loading State -->
+                <div id="loading" class="empty-state hide">
+                    <p>Loading projects...</p>
+                </div>
+
+                <!-- Error State -->
+                <div id="error" class="empty-state hide">
+                    <p>Failed to load project data. Please try again.</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty" class="empty-state hide">
+                    <p>No projects have been added or found yet.</p>
+                </div>
+
+                <!-- Project Grid: stack cards on top, the front card's details below -->
+                <div id="grid" class="deck hide">
                     <div class="deck-stack" tabindex="0" role="group"
                          aria-roledescription="carousel"
                          aria-label="Project screenshots. Drag the front card, or press the arrow keys, to see the next one.">
-                        {% for project in project_list %}
-                        <article class="stack-card"
-                                 data-depth="{{ forloop.counter0 }}"
-                                 aria-hidden="{% if forloop.first %}false{% else %}true{% endif %}">
-                            <span class="stack-card-year">{{ project.year }}</span>
-                            <div class="stack-card-shot">
-                                {% if project.image %}
-                                    <img class="stack-card-img"
-                                         src="{{ project.image_src }}"
-                                         alt="Screenshot of {{ project.title }}"
-                                         draggable="false">
-                                {% endif %}
-                            </div> 
-                            <div class="stack-card-foot">
-                                <span class="stack-card-tech">{{ project.tech_list|join:" + " }}</span>
-                                {% if project.live_url %}
-                                    <a class="social-link" href="{{ project.live_url }}"
-                                       target="_blank" rel="noopener">Website</a>
-                                {% endif %}
-                                {% if project.repo_url %}
-                                    <a class="social-link" href="{{ project.repo_url }}"
-                                       target="_blank" rel="noopener">Github</a>
-                                {% endif %}
-                            </div>
-                        </article>
-                        {% empty %}
-                        <p class="empty-state">No projects added yet.</p>
-                        {% endfor %}
                     </div>
 
-                    <div class="deck-details">
-                        {% for project in project_list %}
-                        <article class="deck-detail{% if forloop.first %} is-active{% endif %}" id="project-{{ project.id }}">
-                            <p class="deck-count">{{ forloop.counter }} / {{ project_list|length }}</p>
-                            <h2 class="deck-title">{{ project.title }}</h2>
-                            <p class="deck-description">{{ project.description|linebreaksbr }}</p>
-                            {% if project.peers.all %}
-                                <div class="peer-row">
-                                    {% for peer in project.peers.all %}
-                                    <span class="peer-item" tabindex="0">
-                                        <img class="peer"
-                                             src="{{ peer.icon_src }}"
-                                             alt="{{ peer.name }}">
-                                        <span class="peer-name">{{ peer.name }}</span>
-                                    </span>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                                <div class="deck-actions">
-                                    {% include "components/project_star.html" with project=project %}
-                                    {% if perms.main.change_project %}
-                                    <a class="social-link" href="{% url 'main:update_project' project.id %}">Edit</a>
-                                    {% endif %}
-                                    {% if perms.main.delete_project %}
-                                    {% include "components/project_delete_modal.html" with project=project %}
-                                    {% endif %}
-                                </div>
-                        </article>
-                        {% endfor %}
-                    </div>
+                    <div class="deck-details"></div>
                 </div>
             </div>
         </section>
@@ -173,20 +148,19 @@
             </div>
         </section>
     </main>
+    {% if user.is_superuser %}
+        {% include "components/project_form_modal.html" %}
+    {% endif %}
 
     <script>
-    (function () {
-        var stack = document.querySelector(".deck-stack");
-        if (!stack) return;
-        var cards = Array.prototype.slice.call(stack.querySelectorAll(".stack-card"));
-        var details = Array.prototype.slice.call(document.querySelectorAll(".deck-detail"));
-        var n = cards.length;
-        if (!n) return;
 
-        var active = Math.max(0, details.findIndex(function (d) { return "#" + d.id === location.hash; }));
+    /* Card deck: the AJAX script below fills the deck, then calls projectDeck.reset() */
+    var projectDeck = (function () {
+        var stack = document.querySelector(".deck-stack");
+        var cards = [], details = [], n = 0, active = 0;
         var SWIPE_PX = 90;     // drag further than this to commit the swipe
         var LEAVE_MS = 400;    // must match the .stack-card transition duration in CSS
-        var busy = false;
+        var busy = false, leaveTimer = null;
 
         function layout() {
             cards.forEach(function (card, i) {
@@ -205,7 +179,7 @@
             var front = cards[active];
             front.setAttribute("data-leave", direction < 0 ? "left" : "right");
             front.classList.add("is-leaving");
-            setTimeout(function () {
+            leaveTimer = setTimeout(function () {
                 front.classList.add("no-transition");
                 front.classList.remove("is-leaving");
                 front.removeAttribute("data-leave");
@@ -221,7 +195,7 @@
         var dragging = false, startX = 0, dx = 0;
 
         stack.addEventListener("pointerdown", function (e) {
-            if (busy) return;
+            if (busy || !n) return;
             var front = cards[active];
             if (!front.contains(e.target) || e.target.closest("a")) return;
             dragging = true;
@@ -257,7 +231,17 @@
             if (e.key === "ArrowLeft")  { e.preventDefault(); advance(-1); }
         });
 
-        layout();
+        return {
+            reset: function () {
+                clearTimeout(leaveTimer);
+                busy = false;
+                cards = Array.prototype.slice.call(stack.querySelectorAll(".stack-card"));
+                details = Array.prototype.slice.call(document.querySelectorAll(".deck-detail"));
+                n = cards.length;
+                active = Math.max(0, details.findIndex(function (d) { return "#" + d.id === location.hash; }));
+                layout();
+            }
+        };
     })();
     </script>
     <script>
@@ -326,6 +310,255 @@
             requestAnimationFrame(tick);
         });
     })();
+    </script>
+
+    <script>
+    // Configuration
+    const BASE_PROJECTS_ENDPOINT = "{% url 'main:get_projects_json' %}";
+    const IS_AUTHENTICATED = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
+    const CAN_EDIT = "{{ perms.main.change_project|yesno:'true,false' }}" === "true";
+    const CAN_DELETE = "{{ perms.main.delete_project|yesno:'true,false' }}" === "true";
+    const LOGIN_URL = "{% url 'main:login' %}?next={{ request.path|urlencode }}";
+    // A dummy UUID used as a placeholder to be replaced with the real ID from the JSON data
+    const DUMMY_ID = '00000000-0000-0000-0000-000000000000';
+    let projectsAbortController;
+
+    // DOM elements
+    const loadingState = document.getElementById('loading');
+    const errorState = document.getElementById('error');
+    const emptyState = document.getElementById('empty');
+    const gridContainer = document.getElementById('grid');
+    const stackContainer = gridContainer.querySelector('.deck-stack');
+    const detailsContainer = gridContainer.querySelector('.deck-details');
+    const searchForm = document.getElementById('project-search-form');
+    const searchInput = document.getElementById('search-input');
+
+    // Show/hide page sections
+    function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
+        loadingState.classList.toggle('hide', !showLoading);
+        errorState.classList.toggle('hide', !showError);
+        emptyState.classList.toggle('hide', !showEmpty);
+        gridContainer.classList.toggle('hide', !showGrid);
+    }
+
+    // JSON values go into innerHTML, so escape them first
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value ?? '';
+        return div.innerHTML.replace(/"/g, '&quot;');
+    }
+
+    // Build the screenshot card that sits in the stack
+    function buildProjectCardElement(item) {
+        const project = item.fields;
+
+        const articleElement = document.createElement('article');
+        articleElement.className = 'stack-card';
+
+        const imageHtml = project.project_image_url
+            ? `<img class="stack-card-img" src="${escapeHtml(project.project_image_url)}" alt="Screenshot of ${escapeHtml(project.title)}" draggable="false">`
+            : '';
+
+        const liveHtml = project.live_url
+            ? `<a class="social-link" href="${escapeHtml(project.live_url)}" target="_blank" rel="noopener">Website</a>`
+            : '';
+        const repoHtml = project.repo_url
+            ? `<a class="social-link" href="${escapeHtml(project.repo_url)}" target="_blank" rel="noopener">Github</a>`
+            : '';
+
+        articleElement.innerHTML = `
+            <span class="stack-card-year">${escapeHtml(project.year)}</span>
+            <div class="stack-card-shot">${imageHtml}</div>
+            <div class="stack-card-foot">
+                <span class="stack-card-tech">${escapeHtml(project.tech_list.join(' + '))}</span>
+                ${liveHtml}
+                ${repoHtml}
+            </div>
+        `;
+        return articleElement;
+    }
+
+    // Build the title / description / actions block shown under the front card
+    function buildProjectDetailElement(item, index, total) {
+        const project = item.fields;
+        const projectId = item.pk;
+
+        const articleElement = document.createElement('article');
+        articleElement.className = 'deck-detail';
+        articleElement.id = `project-${projectId}`;
+
+        const starUrl = "{% url 'main:toggle_star' '00000000-0000-0000-0000-000000000000' %}".replace(DUMMY_ID, projectId);
+        const editUrl = "{% url 'main:update_project' '00000000-0000-0000-0000-000000000000' %}".replace(DUMMY_ID, projectId);
+        const deleteUrl = "{% url 'main:delete_project' '00000000-0000-0000-0000-000000000000' %}".replace(DUMMY_ID, projectId);
+
+        const peersHtml = project.peers.length
+            ? `<div class="peer-row">
+                ${project.peers.map(peer => `
+                    <span class="peer-item" tabindex="0">
+                        <img class="peer" src="${escapeHtml(peer.icon_url)}" alt="${escapeHtml(peer.name)}">
+                        <span class="peer-name">${escapeHtml(peer.name)}</span>
+                    </span>`).join('')}
+            </div>`
+            : '';
+
+        const starHtml = IS_AUTHENTICATED
+            ? `<form method="post" action="${starUrl}" class="star-form">
+                {% csrf_token %}
+                <button type="submit"
+                        class="star${project.is_starred ? ' is-starred' : ''}"
+                        aria-pressed="${project.is_starred}"
+                        title="${project.star_count > 0 ? `Starred by ${escapeHtml(project.starred_by_names)}` : 'Be the first to star'}">
+                    <span class="star-icon" aria-hidden="true">★</span>
+                    ${project.is_starred ? 'Starred' : 'Star'}
+                    <span class="star-count">${project.star_count}</span>
+                </button>
+            </form>`
+            : `<a class="star" href="${LOGIN_URL}">
+                <span class="star-icon" aria-hidden="true">★</span>
+                Log in to star
+                <span class="star-count">${project.star_count}</span>
+            </a>`;
+
+        const editHtml = CAN_EDIT
+            ? `<a class="social-link" href="${editUrl}">Edit</a>`
+            : '';
+
+        const deleteHtml = CAN_DELETE
+            ? `<button type="button" class="social-link is-danger" popovertarget="confirm-${projectId}">Delete</button>
+            <div id="confirm-${projectId}" class="confirm" popover role="dialog" aria-labelledby="confirm-title-${projectId}">
+                <h3 id="confirm-title-${projectId}">Delete this project?</h3>
+                <p><strong>${escapeHtml(project.title)}</strong> will be removed from your portfolio. Its collaborators stay in Peers.</p>
+                <div class="confirm-actions">
+                    <button type="button" class="social-link" popovertarget="confirm-${projectId}" popovertargetaction="hide">Keep it</button>
+                    <form method="post" action="${deleteUrl}">
+                        {% csrf_token %}
+                        <button type="submit" class="social-link is-danger">Yes, delete</button>
+                    </form>
+                </div>
+            </div>`
+            : '';
+
+        articleElement.innerHTML = `
+            <p class="deck-count">${index + 1} / ${total}</p>
+            <h2 class="deck-title">${escapeHtml(project.title)}</h2>
+            <p class="deck-description">${escapeHtml(project.description).replace(/\r?\n/g, '<br>')}</p>
+            ${peersHtml}
+            <div class="deck-actions">
+                ${starHtml}
+                ${editHtml}
+                ${deleteHtml}
+            </div>
+        `;
+        return articleElement;
+    }
+
+    // Fetch project data
+    async function fetchProjects(searchQuery = "") {
+        if (projectsAbortController) projectsAbortController.abort();
+        projectsAbortController = new AbortController();
+
+        try {
+            displayPageSection({ showLoading: true });
+
+            const url = searchQuery ? `${BASE_PROJECTS_ENDPOINT}?title=${encodeURIComponent(searchQuery)}` : BASE_PROJECTS_ENDPOINT;
+
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                signal: projectsAbortController.signal,
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch data');
+
+            const projectData = await response.json();
+
+            if (projectData.length === 0) {
+                displayPageSection({ showEmpty: true });
+            } else {
+                stackContainer.innerHTML = '';
+                detailsContainer.innerHTML = '';
+                projectData.forEach((item, index) => {
+                    stackContainer.appendChild(buildProjectCardElement(item));
+                    detailsContainer.appendChild(buildProjectDetailElement(item, index, projectData.length));
+                });
+                projectDeck.reset();
+                displayPageSection({ showGrid: true });
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') return;
+            console.error('Error loading projects:', error);
+            displayPageSection({ showError: true });
+        }
+    }
+
+    // Search form event handler
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent the page from reloading
+        fetchProjects(searchInput.value.trim()); // Run the search via AJAX
+    });
+
+    function closeProjectModal() {
+        document.getElementById("add-project-modal").hidePopover();
+    }
+    // Send the form data with the fetch API
+        const CREATE_PROJECT_ENDPOINT = "{% url 'main:create_project_ajax' %}";
+    const projectForm = document.getElementById('project-form');
+
+    // Read a cookie value, used to get the CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Send the form data to the server
+    async function addProject(event) {
+        event.preventDefault();
+
+        const submitButton = projectForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+
+        try {
+            const response = await fetch(CREATE_PROJECT_ENDPOINT, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                body: new FormData(projectForm),
+            });
+            const result = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+                projectForm.reset();
+                closeProjectModal();
+                showToast('Success', 'New project added successfully!', 'success');
+                fetchProjects(searchInput.value.trim());
+            } else {
+                const errorMessages = result.errors
+                    ? Object.values(result.errors).flat().map(error => error.message)
+                    : [result.message || `Something went wrong (status ${response.status}).`];
+                showToast('Failed to add project', errorMessages.join(' '), 'error');
+            }
+        } catch (error) {
+            console.error('Error adding project:', error);
+            showToast('Failed to add project', 'Could not reach the server. Please try again.', 'error');
+        } finally {
+            submitButton.disabled = false;
+        }
+    }
+
+    if (projectForm) {
+        projectForm.addEventListener('submit', addProject);
+    }
+
+    // Start the application
+    fetchProjects(searchInput.value.trim());
     </script>
 
 {% endblock content %}

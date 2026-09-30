@@ -5,7 +5,7 @@ from main.forms import ProjectForm, PeerForm
 
 from django.contrib import messages
 from django.core import serializers
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
@@ -55,10 +55,41 @@ PUBLIC_FIELDS = ("title", "year", "role", "description", "image",
                  "tech_stack", "repo_url", "live_url", "order", "peers")
 
 def get_projects_json(request):
-    return HttpResponse(
-        serializers.serialize("json", _filtered_projects(request), fields=PUBLIC_FIELDS),
-        content_type="application/json",
-    )
+    title_query = request.GET.get("title", "").strip()
+    projects = Project.objects.prefetch_related('starred_by', 'peers').all()
+
+    if title_query:
+        projects = projects.filter(title__icontains=title_query)
+
+    # Manually build the JSON data so we can add the Star logic
+    data = []
+    for project in projects:
+        starred_users = project.starred_by.all()
+        is_starred = request.user in starred_users if request.user.is_authenticated else False
+        starred_by_names = ", ".join([u.username for u in starred_users])
+
+        data.append({
+            "pk": str(project.id),
+            "fields": {
+                "title": project.title,
+                "year": project.year,
+                "description": project.description,
+                "tech_stack": project.tech_stack,
+                "tech_list": project.tech_list,
+                "live_url": project.live_url,
+                "repo_url": project.repo_url,
+                "project_image_url": project.image_src if project.image else "",
+                "peers": [
+                    {"name": peer.name, "icon_url": peer.icon_src}
+                    for peer in project.peers.all()
+                ],
+                "star_count": len(starred_users),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+
+    return JsonResponse(data, safe=False)
 
 
 def get_projects_xml(request):
@@ -69,14 +100,9 @@ def get_projects_xml(request):
 
 
 def show_projects(request):
-    # Read through the JSON endpoint instead of the ORM, then deserialize back into Project objects
-    json_response = get_projects_json(request)
-    deserialized = serializers.deserialize("json", json_response.content.decode("utf-8"))
-    projects = [item.object for item in deserialized]
-
+    # Projects are fetched by the page itself from get_projects_json (AJAX)
     context = {
         **PROFILE,
-        "project_list": projects,
         "peer_list": Peer.objects.filter(show_in_peers=True),
         "title_query": request.GET.get("title", "").strip(),
     }
@@ -221,3 +247,22 @@ def toggle_star(request, project_id):
 
     # Back to the same card instead of the first one
     return redirect(reverse("main:show_projects") + f"#project-{project.id}")
+
+# Create Project AJAX
+@require_POST
+def create_project_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {"message": "Only the portfolio owner can add projects."},
+            status=403,
+        )
+
+    form = ProjectForm(request.POST)
+    if form.is_valid():
+        project = form.save()
+        return JsonResponse(
+            {"message": "Project added successfully.", "pk": str(project.id)},
+            status=201,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
