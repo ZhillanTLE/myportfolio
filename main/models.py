@@ -4,6 +4,7 @@ from django.db import models
 from django.templatetags.static import static
 from django.contrib.auth.models import User
 
+HEADCOUNT = re.compile(r"^\+\s*(\d+)")
 DRIVE_ID = re.compile(r"drive\.google\.com/(?:file/d/|open\?id=|uc\?(?:.*&)?id=)([\w-]+)")
 
 def media_src(value):
@@ -46,6 +47,7 @@ class Peer(models.Model):
     name = models.CharField(max_length=100)
     icon = models.CharField(
         max_length=255,
+        blank=True,
         help_text="Path under static/, e.g. icons/peers/zayyan.png",
     )
     url = models.URLField(blank=True, null=True)
@@ -62,7 +64,17 @@ class Peer(models.Model):
 
     @property
     def icon_src(self):
-        return media_src(self.icon)
+        return media_src(self.icon) if self.icon else ""
+
+    @property
+    def headcount(self):
+        """A placeholder peer like "+34 Others" stands for 34 people, everyone else for one."""
+        match = HEADCOUNT.match(self.name)
+        return int(match.group(1)) if match else 1
+
+    @property
+    def is_placeholder(self):
+        return bool(HEADCOUNT.match(self.name))
 
 
 
@@ -71,6 +83,11 @@ class Project(models.Model):
     title = models.CharField(max_length=255)
     year = models.CharField(max_length=16)
     role = models.CharField(max_length=120, blank=True)
+    context = models.CharField(
+        max_length=160,
+        blank=True,
+        help_text="Where it was built or how it did, e.g. Ranked 6 of 250+ at AIC COMPFEST 18",
+    )
     description = models.TextField()
     image = models.CharField(
         max_length=255,
@@ -98,6 +115,15 @@ class Project(models.Model):
         return media_src(self.image)
 
     
+    @property
+    def team_label(self):
+        """3 people, or 4 + 34 others when a placeholder peer stands in for a crowd."""
+        peers = list(self.peers.all())
+        named = sum(1 for peer in peers if not peer.is_placeholder)
+        others = sum(peer.headcount for peer in peers if peer.is_placeholder)
+        label = f"{named} {'person' if named == 1 else 'people'}"
+        return f"{named} + {others} others" if others else label
+
     @property
     def tech_list(self):
         return [tech.strip() for tech in self.tech_stack.split(",") if tech.strip()]
