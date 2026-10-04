@@ -93,6 +93,23 @@ class TeamsAndGuestbookTest(TestCase):
         self.arung.peers.add(self.zhillan, self.others)
         self.admin = User.objects.create_superuser("owner", password="pw-owner-123")
 
+    def test_duplicate_collaborators_merge_into_one(self):
+        import importlib
+        from django.apps import apps
+        merge = importlib.import_module("main.migrations.0013_merge_duplicate_collaborators").merge_duplicates
+
+        tinta = Project.objects.create(title="Tinta", year="2026", description="d", image="x.png", tech_stack="")
+        twin = Peer.objects.create(name="zhillan ", icon="")
+        tinta.peers.add(twin)
+        guest = Peer.objects.create(name="Zhillan", message="hi", show_in_peers=True)
+
+        merge(apps, None)
+
+        self.assertEqual(Peer.objects.filter(show_in_peers=False, name__iexact="zhillan").count(), 1)
+        self.assertIn(self.zhillan, tinta.peers.all())
+        self.assertIn(self.zhillan, self.arung.peers.all())
+        self.assertTrue(Peer.objects.filter(pk=guest.pk).exists())
+
     def test_team_label_counts_placeholder_peers(self):
         self.assertEqual(self.arung.team_label, "1 + 34 others")
 
