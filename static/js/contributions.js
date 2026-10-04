@@ -41,6 +41,7 @@
             cell.className = 'gh-d';
             cell.dataset.l = day.level;
             cell.style.gridColumn = column + 1;
+            cell.style.setProperty('--c', column);   // fades in column by column on first load
             cell.style.gridRow = (offset + i) % 7 + 2;
             const when = date.toLocaleDateString('en-US', DAY);
             cell.title = day.count
@@ -82,7 +83,9 @@
             if (!data.days || !data.days.length) return;
             calendar = data;
             graph.hidden = false;   // shown first, so its width can be measured
+            grid.classList.add('is-entering');
             draw(data);
+            setTimeout(() => grid.classList.remove('is-entering'), 1500);   // resizes redraw without replaying it
         })
         .catch(error => console.warn('GitHub contributions unavailable:', error));   // the link still works
 })();

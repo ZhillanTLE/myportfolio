@@ -516,6 +516,10 @@
         }
 
         function finish(sets) {
+            // Restart the fade-in for this drawing
+            svg.classList.remove("is-drawn");
+            void svg.getBoundingClientRect();
+            svg.classList.add("is-drawn");
             svg.setAttribute("aria-label", sets.map(function (p) {
                 return p.fields.title + ": " + p.fields.peers.map(function (peer) { return peer.name; }).join(", ");
             }).join(". "));
@@ -890,10 +894,11 @@
                 </button>`;
         }
 
-        function buildRole(item) {
+        function buildRole(item, index) {
             const experience = item.fields;
             const role = document.createElement('details');
             role.className = 'role';
+            role.style.setProperty('--i', Math.min(index, 12));   // stagger the entrance, capped so long lists don't drag
             role.id = `experience-${item.pk}`;
             role.dataset.pk = item.pk;
 
