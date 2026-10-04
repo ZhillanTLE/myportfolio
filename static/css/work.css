@@ -267,6 +267,8 @@
 .zr .venn .sname { font-family: var(--body); font-weight: 600; font-size: 26px; letter-spacing: -.02em; fill: var(--ink); }
 .zr .venn .smeta, .zr .venn .pname { font-family: var(--mono); font-stretch: 87.5%; font-size: 11.5px; fill: var(--mute); }
 .zr .venn .empty { font-family: var(--mono); font-size: 15px; fill: var(--faint); }
+.zr .venn .link { stroke: var(--faint); stroke-width: 1.2; stroke-dasharray: 3 4; transition: stroke .25s ease, opacity .25s ease; }
+.zr .venn .link.hot { stroke: var(--ink); stroke-dasharray: none; }
 .zr .venn .person { cursor: pointer; outline: none; transition: opacity .25s ease; }
 .zr .venn .person image { filter: grayscale(1); transition: filter .25s ease; }
 .zr .venn .person .disc { fill: var(--raise); }
@@ -274,6 +276,7 @@
 .zr .venn .person .ring { fill: none; stroke: var(--line); stroke-width: 2; transition: stroke .25s ease; }
 .zr .venn.focus .set:not(.hot), .zr .venn.focus .slabel:not(.hot) { opacity: .3; }
 .zr .venn.focus .person:not(.hot) { opacity: .22; }
+.zr .venn.focus .link:not(.hot) { opacity: .15; }
 .zr .venn .person.hot image { filter: none; }
 .zr .venn .person.hot .ring, .zr .venn .person:focus-visible .ring { stroke: var(--ink); }
 
