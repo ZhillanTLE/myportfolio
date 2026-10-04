@@ -1,15 +1,17 @@
 from django.forms import (
     CharField,
     CheckboxSelectMultiple,
+    DateInput,
     Form,
     ModelForm,
     ModelMultipleChoiceField,
+    Select,
     Textarea,
     TextInput,
     URLField,
     URLInput,
 )
-from main.models import Project, Peer
+from main.models import Experience, Project, Peer
 from django.core.exceptions import ValidationError
 from django.utils.html import strip_tags
 
@@ -188,3 +190,50 @@ class PeerForm(ModelForm):
 
     def clean_message(self):
         return strip_tags(self.cleaned_data["message"]).strip()
+
+
+class ExperienceForm(ModelForm):
+    class Meta:
+        model = Experience
+        fields = ["title", "organization", "category", "started_at", "ended_at", "description"]
+
+        labels = {
+            "title": "Role",
+            "organization": "Organization",
+            "category": "Type",
+            "started_at": "Started",
+            "ended_at": "Ended",
+            "description": "What you did",
+        }
+
+        widgets = {
+            "title": TextInput(attrs={"placeholder": "Head of Something @ Somewhere", "maxlength": 255}),
+            "organization": TextInput(attrs={"placeholder": "Org · City", "maxlength": 160}),
+            "category": Select(),
+            # format keeps a re-rendered value in the YYYY-MM-DD shape <input type="date"> expects
+            "started_at": DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "ended_at": DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "description": Textarea(attrs={"placeholder": "One point per line.", "rows": 5}),
+        }
+
+    def clean_title(self):
+        title = strip_tags(self.cleaned_data["title"]).strip()
+        if not title:
+            raise ValidationError("Role can't contain only HTML tags.")
+        return title
+
+    def clean_organization(self):
+        return strip_tags(self.cleaned_data["organization"]).strip()
+
+    def clean_description(self):
+        description = strip_tags(self.cleaned_data["description"]).strip()
+        if not description:
+            raise ValidationError("Write at least one point that isn't only HTML tags.")
+        return description
+
+    def clean(self):
+        cleaned = super().clean()
+        started, ended = cleaned.get("started_at"), cleaned.get("ended_at")
+        if started and ended and ended < started:
+            self.add_error("ended_at", "End date can't be before the start date.")
+        return cleaned

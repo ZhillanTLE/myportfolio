@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from main.models import Peer, Project
+from main.models import Experience, Peer, Project
 
 
 class MainTest(TestCase):
@@ -149,3 +149,103 @@ class TeamsAndGuestbookTest(TestCase):
         page = self.client.get(reverse("main:show_projects")).content.decode()
         self.assertIn('<span class="nm">Tania</span>', page)
         self.assertIn('id="sign-no">02<', page)
+
+
+class ExperienceAjaxTest(TestCase):
+    def setUp(self):
+        import datetime
+        from django.contrib.auth.models import User
+
+        # Migration 0012 seeds the real roles; start from nothing
+        Experience.objects.all().delete()
+        self.opsigo = Experience.objects.create(
+            title="Product Management Intern", organization="Opsigo Asia · Jakarta", category="internship",
+            started_at=datetime.date(2026, 7, 1), ended_at=datetime.date(2026, 8, 31),
+            description="Shipped a cart.\nRanked fares.",
+        )
+        self.admin = User.objects.create_superuser("owner", password="pw-owner-123")
+        self.visitor = User.objects.create_user("visitor", password="pw-visitor-123")
+        self.valid = {
+            "title": "Asisten Dosen", "organization": "Fasilkom UI", "category": "part-time",
+            "started_at": "2026-09-01", "ended_at": "", "description": "Taught calculus.",
+        }
+
+    def test_period_label(self):
+        import datetime
+        self.assertEqual(self.opsigo.period, "JUL–AUG '26")
+        self.opsigo.ended_at = None
+        self.assertEqual(self.opsigo.period, "JUL–NOW '26")
+        self.opsigo.ended_at = datetime.date(2026, 7, 20)
+        self.assertEqual(self.opsigo.period, "JUL '26")
+        self.opsigo.ended_at = datetime.date(2027, 1, 5)
+        self.assertEqual(self.opsigo.period, "JUL '26–JAN '27")
+
+    def test_page_is_a_skeleton_for_visitors(self):
+        response = self.client.get(reverse("main:show_projects"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="experience-list"')
+        self.assertNotContains(response, self.opsigo.title)
+        self.assertNotContains(response, 'id="add-experience-modal"')
+
+    def test_editor_gets_the_modal(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("main:show_projects"))
+        self.assertContains(response, 'id="add-experience-modal"')
+
+    def test_json_for_visitor_has_stars_but_not_starred(self):
+        self.opsigo.starred_by.add(self.admin)
+        fields = self.client.get(reverse("main:get_experiences_json")).json()[0]["fields"]
+        self.assertEqual(fields["star_count"], 1)
+        self.assertFalse(fields["is_starred"])
+        self.assertEqual(fields["points"], ["Shipped a cart.", "Ranked fares."])
+        self.assertEqual(fields["category_label"], "Internship")
+
+    def test_json_marks_my_star(self):
+        self.opsigo.starred_by.add(self.visitor)
+        self.client.force_login(self.visitor)
+        fields = self.client.get(reverse("main:get_experiences_json")).json()[0]["fields"]
+        self.assertTrue(fields["is_starred"])
+
+    def test_json_search_by_title_or_organization(self):
+        url = reverse("main:get_experiences_json")
+        self.assertEqual(len(self.client.get(url, {"q": "intern"}).json()), 1)
+        self.assertEqual(len(self.client.get(url, {"q": "opsigo"}).json()), 1)
+        self.assertEqual(self.client.get(url, {"q": "nothing like it"}).json(), [])
+
+    def test_create_needs_permission(self):
+        url = reverse("main:create_experience_ajax")
+        self.assertEqual(self.client.post(url, self.valid).status_code, 403)
+        self.client.force_login(self.visitor)
+        self.assertEqual(self.client.post(url, self.valid).status_code, 403)
+        self.assertFalse(Experience.objects.filter(title="Asisten Dosen").exists())
+
+    def test_create_returns_201_and_strips_tags(self):
+        self.client.force_login(self.admin)
+        data = dict(self.valid, title="<script>alert(1)</script>Asisten Dosen", description="<b>Taught</b> calculus.")
+        response = self.client.post(reverse("main:create_experience_ajax"), data)
+        self.assertEqual(response.status_code, 201)
+        experience = Experience.objects.get(pk=response.json()["pk"])
+        self.assertEqual(experience.title, "alert(1)Asisten Dosen")
+        self.assertEqual(experience.description, "Taught calculus.")
+        self.assertTrue(experience.is_ongoing)
+
+    def test_create_rejects_bad_input_with_400(self):
+        self.client.force_login(self.admin)
+        data = dict(self.valid, title="<b></b>", started_at="2026-09-01", ended_at="2026-08-01")
+        response = self.client.post(reverse("main:create_experience_ajax"), data)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("title", response.json()["errors"])
+        self.assertIn("ended_at", response.json()["errors"])
+
+    def test_create_requires_csrf_token(self):
+        from django.test import Client
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.admin)
+        self.assertEqual(client.post(reverse("main:create_experience_ajax"), self.valid).status_code, 403)
+
+    def test_star_toggles_for_logged_in_user_only(self):
+        url = reverse("main:toggle_experience_star", args=[self.opsigo.pk])
+        self.assertEqual(self.client.post(url).status_code, 403)
+        self.client.force_login(self.visitor)
+        self.assertEqual(self.client.post(url).json(), {"is_starred": True, "star_count": 1})
+        self.assertEqual(self.client.post(url).json(), {"is_starred": False, "star_count": 0})

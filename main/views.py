@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from main.models import Project, Peer
-from main.forms import ProjectForm, PeerForm, TeammateForm, find_or_create_collaborator
+from main.models import Experience, Project, Peer
+from main.forms import ExperienceForm, ProjectForm, PeerForm, TeammateForm, find_or_create_collaborator
 
 
 from django.contrib import messages
@@ -13,6 +13,7 @@ from django.contrib.auth import login, logout
 import datetime
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db.models import Count, Q
 
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -113,6 +114,9 @@ def show_projects(request):
         context["form"] = ProjectForm()
     if request.user.has_perm("main.change_project"):
         context["teammate_form"] = TeammateForm()
+    if request.user.has_perm("main.add_experience"):
+        # Own id prefix: the project modal on the same page already uses id_title, id_description
+        context["experience_form"] = ExperienceForm(auto_id="experience_%s")
     return render(request, "projects.html", context)
 
 
@@ -297,3 +301,69 @@ def add_teammate(request):
         return JsonResponse({"message": f"{peer.name} added.", "pk": str(peer.pk)}, status=201)
 
     return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
+
+# Experience: listed, searched, added and starred from the Work page with fetch
+
+def _experience_json(experience, starred_ids):
+    return {
+        "pk": str(experience.pk),
+        "fields": {
+            "title": experience.title,
+            "organization": experience.organization,
+            "category": experience.category,
+            "category_label": experience.get_category_display(),
+            "period": experience.period,
+            "is_ongoing": experience.is_ongoing,
+            "points": experience.points,
+            "star_count": experience.star_count,
+            "is_starred": experience.pk in starred_ids,
+        },
+    }
+
+
+def get_experiences_json(request):
+    query = request.GET.get("q", "").strip()
+    experiences = Experience.objects.annotate(star_count=Count("starred_by"))
+    if query:
+        experiences = experiences.filter(Q(title__icontains=query) | Q(organization__icontains=query))
+
+    # One query for "did I star this", instead of one per row
+    starred_ids = set()
+    if request.user.is_authenticated:
+        starred_ids = set(request.user.starred_experience.values_list("pk", flat=True))
+
+    return JsonResponse([_experience_json(e, starred_ids) for e in experiences], safe=False)
+
+
+@require_POST
+def create_experience_ajax(request):
+    # Checked here, not only by hiding the button: a hand-made POST meets the same rule
+    if not request.user.has_perm("main.add_experience"):
+        return JsonResponse({"message": "Only editors can add experience."}, status=403)
+
+    form = ExperienceForm(request.POST)
+    if form.is_valid():
+        experience = form.save()
+        return JsonResponse(
+            {"message": f"{experience.title} added.", "pk": str(experience.pk)},
+            status=201,
+        )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
+
+@require_POST
+def toggle_experience_star(request, experience_id):
+    if not request.user.is_authenticated:
+        return JsonResponse({"message": "Log in to star experience."}, status=403)
+
+    experience = get_object_or_404(Experience, pk=experience_id)
+    if experience.starred_by.filter(pk=request.user.pk).exists():
+        experience.starred_by.remove(request.user)
+        is_starred = False
+    else:
+        experience.starred_by.add(request.user)
+        is_starred = True
+
+    return JsonResponse({"is_starred": is_starred, "star_count": experience.starred_by.count()})

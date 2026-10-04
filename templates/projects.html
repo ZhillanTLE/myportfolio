@@ -4,75 +4,31 @@
     <main>
         <section class="experience" id="experience">
             <div class="container">
-                <h2 class="section-title">Experience</h2>
-                <details class="role">
-                    <summary class="role-header">
-                        <span class="role-dates">JUL&ndash;AUG '26</span>
-                        <span class="role-rule" aria-hidden="true"></span>
-                        <h3 class="role-title">
-                            Product Management Intern @ Opsigo Asia
-                        </h3>
-                        <span class="role-chevron" aria-hidden="true"></span>
-                    </summary>
-                    <div class="role-body">
-                        <p class="role-org">Opsigo Asia &middot; Jakarta</p>
-                        <ul class="role-points">
-                            <li>Researched and shipped a consolidated multi-item cart, replacing the repeated search-and-compare cycle across flights, hotels, and rail with a single flow &middot; a projected 66.6% drop in admin work per itinerary.</li>
-                            <li>Led a High/Standard/Low fare-tiering feature that auto-ranks search results with QuickSelect partitioning, cutting manual price benchmarking and reducing SLA response time per item search by 75%.</li>
-                        </ul>
+                <!-- Skeleton only: the roles are fetched from get_experiences_json below -->
+                <div class="exp-head">
+                    <h2 class="section-title">Experience<sup id="experience-count"></sup></h2>
+                    <div class="zr exp-tools">
+                        <form id="experience-search-form" class="search" role="search">
+                            <input type="search"
+                                   id="experience-search"
+                                   name="q"
+                                   placeholder="search role or org"
+                                   aria-label="Search experience by role or organization"
+                                   autocomplete="off">
+                        </form>
+                        {% if experience_form %}
+                        <button type="button" class="btn" popovertarget="add-experience-modal">+ add experience</button>
+                        {% endif %}
                     </div>
-                </details>
-                <details class="role">
-                    <summary class="role-header">
-                        <span class="role-dates">FEB&ndash;NOW '26</span>
-                        <span class="role-rule" aria-hidden="true"></span>
-                        <h3 class="role-title">
-                            Manager of Website Development @ OH Fasilkom UI</h3>
-                        <span class="role-chevron" aria-hidden="true"></span>
-                    </summary>
-                    <div class="role-body">
-                        <p class="role-org">Open House Fasilkom UI &middot; Depok</p>
-                        <ul class="role-points">
-                            <li>Memecut IT Dev & UIUX</li>
-                            <li>Memasak PRD</li>
-                            <li>CLARITYYY INNN TECHNOLOGYYYY!!</li>
-                        </ul>
-                    </div>
-                </details>
-                <details class="role">
-                    <summary class="role-header">
-                        <span class="role-dates">MAY '26</span>
-                        <span class="role-rule" aria-hidden="true"></span>
-                        <h3 class="role-title">
-                            Technical Project Manager @ Tinta, a GEMASTIK project
-                        </h3>
-                        <span class="role-chevron" aria-hidden="true"></span>
-                    </summary>
-                    <div class="role-body">
-                        <p class="role-org">GEMASTIK 2026 &middot; Indonesia</p>
-                        <ul class="role-points">
-                            <li>I LOVE ZAYYAN AND NIA</li>
-                        <li>Served as Technical Product Manager, leading the technical architecture for a 3-person CS team building an academic writing integrity platform for Indonesian higher education</li>
-                        <li>Designed a full-stack system featuring role-based access control, real-time collaboration, and a process-basedwriting verification approach</li>
-                        </ul>
-                    </div>
-                </details>
-                <details class="role">
-                    <summary class="role-header">
-                        <span class="role-dates">OCT&ndash;DEC '25</span>
-                        <span class="role-rule" aria-hidden="true"></span>
-                        <h3 class="role-title">
-                            Head of UIUX @ ARUNG Fasilkom UI
-                        </h3>
-                        <span class="role-chevron" aria-hidden="true"></span>
-                    </summary>
-                    <div class="role-body">
-                        <p class="role-org">Website Angkatan Fasilkom UI 2025 &middot; Depok</p>
-                        <ul class="role-points">
-                        <li>Lead UIUX Team to research, plan, wireframe, and final design to complete Fasilkom UI 2025 Cohort's website serving 400+ cohort members</li>
-                        </ul>
-                    </div>
-                </details>
+                </div>
+
+                <p id="experience-loading" class="exp-state" role="status">loading experience…</p>
+                <div id="experience-error" class="exp-state hide" role="alert">
+                    Failed to load experience.
+                    <button type="button" class="exp-retry" id="experience-retry">try again</button>
+                </div>
+                <p id="experience-empty" class="exp-state hide"></p>
+                <div id="experience-list" class="hide" aria-live="polite"></div>
             </div>
         </section>
         <section class="zr work" id="projects">
@@ -145,6 +101,9 @@
     {% endif %}
     {% if teammate_form %}
         {% include "components/teammate_form_modal.html" %}
+    {% endif %}
+    {% if experience_form %}
+        {% include "components/experience_form_modal.html" %}
     {% endif %}
 
     <script>
@@ -798,6 +757,200 @@
 
     // Start the application
     fetchProjects(searchInput.value.trim());
+    </script>
+
+    <script>
+    /* Experience: the section above is a skeleton; everything in it comes from get_experiences_json */
+    (function () {
+        const ENDPOINT = "{% url 'main:get_experiences_json' %}";
+        const STAR_URL = "{% url 'main:toggle_experience_star' '00000000-0000-0000-0000-000000000000' %}";
+        const SEARCH_DELAY = 400;   // ms of quiet typing before a search request goes out
+
+        const loadingState = document.getElementById('experience-loading');
+        const errorState = document.getElementById('experience-error');
+        const emptyState = document.getElementById('experience-empty');
+        const list = document.getElementById('experience-list');
+        const count = document.getElementById('experience-count');
+        const searchForm = document.getElementById('experience-search-form');
+        const searchInput = document.getElementById('experience-search');
+
+        let controller;
+        let debounceTimer;
+        let lastQuery = null;
+
+        function show({ loading = false, error = false, empty = false, items = false }) {
+            loadingState.classList.toggle('hide', !loading);
+            errorState.classList.toggle('hide', !error);
+            emptyState.classList.toggle('hide', !empty);
+            list.classList.toggle('hide', !items);
+        }
+
+        function starButtonHtml(experience, pk) {
+            if (!IS_AUTHENTICATED) {
+                return `<a class="btn pstar" href="${LOGIN_URL}">
+                    ${STAR_SVG}log in to star <span class="cnt">${experience.star_count}</span>
+                </a>`;
+            }
+            return `<button type="button"
+                        class="btn pstar${experience.is_starred ? ' on' : ''}"
+                        data-star="${escapeHtml(pk)}"
+                        aria-pressed="${experience.is_starred}">
+                    ${STAR_SVG}<span class="word">${experience.is_starred ? 'starred' : 'star'}</span>
+                    <span class="cnt">${experience.star_count}</span>
+                </button>`;
+        }
+
+        function buildRole(item) {
+            const experience = item.fields;
+            const role = document.createElement('details');
+            role.className = 'role';
+            role.id = `experience-${item.pk}`;
+            role.dataset.pk = item.pk;
+
+            const org = [experience.organization, experience.category_label].filter(Boolean).map(escapeHtml).join(' &middot; ');
+            role.innerHTML = `
+                <summary class="role-header">
+                    <span class="role-dates">${escapeHtml(experience.period)}</span>
+                    <span class="role-rule" aria-hidden="true"></span>
+                    <h3 class="role-title">${escapeHtml(experience.title)}</h3>
+                    <span class="role-chevron" aria-hidden="true"></span>
+                </summary>
+                <div class="role-body">
+                    <p class="role-org">${org}</p>
+                    <ul class="role-points">
+                        ${experience.points.map(point => `<li>${escapeHtml(point)}</li>`).join('')}
+                    </ul>
+                    <div class="zr role-actions">${starButtonHtml(experience, item.pk)}</div>
+                </div>
+            `;
+            return role;
+        }
+
+        // force: reload even when the query hasn't changed (after adding, or on retry)
+        async function loadExperiences(query, { force = false, open = [] } = {}) {
+            if (!force && query === lastQuery) return;
+            lastQuery = query;
+
+            if (controller) controller.abort();   // a slower, older search must not overwrite this one
+            controller = new AbortController();
+
+            // Keep the rows that were open, open, through the redraw
+            const keepOpen = Array.from(list.querySelectorAll('details[open]')).map(role => role.dataset.pk).concat(open);
+            show({ loading: true });
+
+            try {
+                const url = query ? `${ENDPOINT}?q=${encodeURIComponent(query)}` : ENDPOINT;
+                const response = await fetch(url, {
+                    headers: { 'Accept': 'application/json' },
+                    signal: controller.signal,
+                });
+                if (!response.ok) throw new Error(`Status ${response.status}`);
+                const experiences = await response.json();
+
+                count.textContent = pad2(experiences.length);
+                if (experiences.length === 0) {
+                    emptyState.textContent = query ? `No experience matches “${query}”.` : 'No experience added yet.';
+                    show({ empty: true });
+                    return;
+                }
+                list.replaceChildren(...experiences.map(buildRole));
+                keepOpen.forEach(pk => {
+                    const role = list.querySelector(`details[data-pk="${CSS.escape(pk)}"]`);
+                    if (role) role.open = true;
+                });
+                show({ items: true });
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+                console.error('Error loading experience:', error);
+                show({ error: true });
+            }
+        }
+
+        // Debounced search: each keystroke restarts the timer, so only the pause sends a request
+        searchInput.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => loadExperiences(searchInput.value.trim()), SEARCH_DELAY);
+        });
+        searchForm.addEventListener('submit', function (event) {
+            event.preventDefault();   // Enter searches right away, without reloading the page
+            clearTimeout(debounceTimer);
+            loadExperiences(searchInput.value.trim());
+        });
+        document.getElementById('experience-retry').addEventListener('click', function () {
+            loadExperiences(searchInput.value.trim(), { force: true });
+        });
+
+        // Star / unstar in place
+        list.addEventListener('click', async function (event) {
+            const button = event.target.closest('button[data-star]');
+            if (!button) return;
+            button.disabled = true;
+            try {
+                const response = await fetch(STAR_URL.replace(DUMMY_ID, button.dataset.star), {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    showToast('Not starred', errorText(result, response.status), 'error');
+                    return;
+                }
+                button.classList.toggle('on', result.is_starred);
+                button.setAttribute('aria-pressed', String(result.is_starred));
+                button.querySelector('.word').textContent = result.is_starred ? 'starred' : 'star';
+                button.querySelector('.cnt').textContent = result.star_count;
+            } catch (error) {
+                console.error('Error starring experience:', error);
+                showToast('Not starred', 'Could not reach the server. Please try again.', 'error');
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+        // Add experience from the modal
+        const form = document.getElementById('experience-form');
+
+        // "Started: This field is required." reads better than the bare message
+        function formErrorText(result, status) {
+            if (!result.errors) return errorText(result, status);
+            return Object.entries(result.errors).map(([field, errors]) => {
+                const label = form.querySelector(`label[for="experience_${field}"]`);
+                const name = label ? label.textContent.replace('*', '').trim() + ': ' : '';
+                return name + errors.map(error => error.message).join(' ');
+            }).join(' ');
+        }
+
+        if (form) {
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                const submitButton = form.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                        body: new FormData(form),   // also carries csrfmiddlewaretoken
+                    });
+                    const result = await response.json().catch(() => ({}));
+                    if (response.status === 201) {
+                        form.reset();
+                        document.getElementById('add-experience-modal').hidePopover();
+                        showToast('Experience added', result.message || 'Saved.', 'success');
+                        loadExperiences(searchInput.value.trim(), { force: true, open: [result.pk] });
+                    } else {
+                        showToast('Not saved', formErrorText(result, response.status), 'error');
+                    }
+                } catch (error) {
+                    console.error('Error adding experience:', error);
+                    showToast('Not saved', 'Could not reach the server. Please try again.', 'error');
+                } finally {
+                    submitButton.disabled = false;
+                }
+            });
+        }
+
+        loadExperiences('');
+    })();
     </script>
 
 

@@ -14,6 +14,9 @@ from main.views import (
     toggle_star,
     create_project_ajax,
     add_teammate,
+    get_experiences_json,
+    create_experience_ajax,
+    toggle_experience_star,
 )
 app_name = 'main'
 
@@ -32,4 +35,7 @@ urlpatterns = [
     path("projects/<uuid:project_id>/star/", toggle_star, name="toggle_star"),
     path("projects/add-ajax/", create_project_ajax, name="create_project_ajax"),
     path("teams/add/", add_teammate, name="add_teammate"),
+    path("api/experiences/", get_experiences_json, name="get_experiences_json"),
+    path("experiences/add-ajax/", create_experience_ajax, name="create_experience_ajax"),
+    path("experiences/<uuid:experience_id>/star/", toggle_experience_star, name="toggle_experience_star"),
 ]

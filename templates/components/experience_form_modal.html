@@ -1,0 +1,54 @@
+<div id="add-experience-modal"
+     class="zr project-form-modal"
+     popover="auto"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="add-experience-modal-title">
+    <button type="button"
+            class="project-form-modal__backdrop"
+            popovertarget="add-experience-modal"
+            popovertargetaction="hide"
+            aria-label="Close add experience form"></button>
+
+    <div class="project-form-modal__content">
+        <button type="button"
+                class="project-form-modal__close"
+                popovertarget="add-experience-modal"
+                popovertargetaction="hide"
+                aria-label="Close add experience form">×</button>
+
+        <h2 id="add-experience-modal-title">Add experience</h2>
+        <form id="experience-form"
+              method="post"
+              action="{% url 'main:create_experience_ajax' %}"
+              class="zr-form"
+              novalidate>
+            {% csrf_token %}
+            <div class="f"><label for="{{ experience_form.title.id_for_label }}">{{ experience_form.title.label }}*</label>{{ experience_form.title }}</div>
+            <div class="two">
+                <div class="f"><label for="{{ experience_form.organization.id_for_label }}">{{ experience_form.organization.label }}</label>{{ experience_form.organization }}</div>
+                <div class="f"><label for="{{ experience_form.category.id_for_label }}">{{ experience_form.category.label }}*</label>{{ experience_form.category }}</div>
+            </div>
+            <div class="two">
+                <div class="f"><label for="{{ experience_form.started_at.id_for_label }}">{{ experience_form.started_at.label }}*</label>{{ experience_form.started_at }}</div>
+                <div class="f">
+                    <label for="{{ experience_form.ended_at.id_for_label }}">{{ experience_form.ended_at.label }}</label>
+                    {{ experience_form.ended_at }}
+                    <p class="hint-line">Leave empty if it's still going.</p>
+                </div>
+            </div>
+            <div class="f">
+                <label for="{{ experience_form.description.id_for_label }}">{{ experience_form.description.label }}*</label>
+                {{ experience_form.description }}
+                <p class="hint-line">Each line becomes one bullet point.</p>
+            </div>
+            <div class="form-actions">
+                <button type="button"
+                        class="btn btn-ghost"
+                        popovertarget="add-experience-modal"
+                        popovertargetaction="hide">Cancel</button>
+                <button type="submit" class="btn">Add experience</button>
+            </div>
+        </form>
+    </div>
+</div>

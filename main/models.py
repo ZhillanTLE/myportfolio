@@ -30,17 +30,45 @@ class Experience(models.Model):
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
-    description = models.TextField()
+    organization = models.CharField(
+        max_length=160,
+        blank=True,
+        help_text="Where it happened, e.g. Opsigo Asia · Jakarta",
+    )
+    description = models.TextField(help_text="One point per line.")
     category = models.CharField(max_length=20, choices=EXPERIENCE_CHOICES, default='full-time')
     thumbnail = models.URLField(blank=True, null=True)
-    started_at = models.DateTimeField(auto_now_add=True)
-    ended_at = models.DateTimeField(blank=True, null=True)
+    started_at = models.DateField()
+    ended_at = models.DateField(blank=True, null=True)
+    starred_by = models.ManyToManyField(User, related_name="starred_experience", blank=True)
+
+    class Meta:
+        ordering = ["-started_at", "title"]
+
     def __str__(self):
         return self.title
-    
+
     @property
     def is_ongoing(self):
         return self.ended_at is None
+
+    @property
+    def points(self):
+        return [line.strip() for line in self.description.splitlines() if line.strip()]
+
+    @property
+    def period(self):
+        """JUL–AUG '26, MAY '26, FEB–NOW '26, or OCT '25–JAN '26 across years."""
+        start, end = self.started_at, self.ended_at
+        month = lambda d: d.strftime("%b").upper()
+        year = lambda d: d.strftime("'%y")
+        if end is None:
+            return f"{month(start)}–NOW {year(start)}"
+        if (start.year, start.month) == (end.year, end.month):
+            return f"{month(start)} {year(start)}"
+        if start.year == end.year:
+            return f"{month(start)}–{month(end)} {year(end)}"
+        return f"{month(start)} {year(start)}–{month(end)} {year(end)}"
 
 class Peer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

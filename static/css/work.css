@@ -295,7 +295,7 @@
 @media (max-width: 560px) { .zr-form .two { grid-template-columns: 1fr; } }
 .zr-form .f { display: grid; gap: 6px; min-width: 0; }
 .zr-form .f > label, .zr-form .f > .lbl { font-family: var(--mono); font-stretch: 87.5%; font-size: .64rem; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); }
-.zr-form input[type="text"], .zr-form input[type="url"], .zr-form textarea {
+.zr-form input[type="text"], .zr-form input[type="url"], .zr-form input[type="date"], .zr-form select, .zr-form textarea {
     width: 100%;
     padding: 8px 0;
     border: 0;
@@ -307,6 +307,8 @@
 }
 .zr-form textarea { resize: vertical; min-height: 6.5em; line-height: 1.5; }
 .zr-form input:focus, .zr-form textarea:focus { outline: none; border-bottom-color: var(--ink); }
+.zr-form input[type="date"] { color-scheme: dark; }
+.zr-form select option { background: var(--raise); color: var(--ink); }
 .zr-form ::placeholder { color: var(--faint); }
 .zr-form .hint-line { margin: 0; font-size: .78rem; color: var(--mute); }
 .zr-form .new-peer { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
