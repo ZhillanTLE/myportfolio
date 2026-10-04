@@ -300,7 +300,8 @@
 
         // Hub layouts: project circle centres around a ring, circle and avatar size, viewBox height
         var HUB = {
-            4: { h: 800, r: 132, ar: 22, rows: 3, C: [{ x: 230, y: 230 }, { x: 770, y: 230 }, { x: 770, y: 590 }, { x: 230, y: 590 }] },
+            // A plus: top, right, bottom, left, so the middle is free for whoever is on several teams
+            4: { h: 950, r: 132, ar: 22, rows: 3, C: [{ x: 500, y: 202 }, { x: 800, y: 472 }, { x: 500, y: 742 }, { x: 200, y: 472 }] },
             5: { h: 910, r: 112, ar: 20, rows: 2, C: [0, 1, 2, 3, 4].map(function (i) {
                 var t = -Math.PI / 2 + i * 2 * Math.PI / 5;
                 return { x: Math.round(500 + 300 * Math.cos(t)), y: Math.round(480 + 300 * Math.sin(t)) };
@@ -382,7 +383,8 @@
             var cy = hub.C.reduce(function (a, c) { return a + c.y; }, 0) / hub.C.length;
 
             sets.forEach(function (p, i) {
-                var c = hub.C[i], above = c.y < cy, y = above ? c.y - hub.r - 38 : c.y + hub.r + 36;
+                // Labels go above every circle except those below the middle (the plus's sides count as above)
+                var c = hub.C[i], above = c.y <= cy, y = above ? c.y - hub.r - 38 : c.y + hub.r + 36;
                 out += '<circle class="set" data-j="' + i + '" cx="' + c.x + '" cy="' + c.y + '" r="' + hub.r + '"/>';
                 out += '<g class="slabel" data-j="' + i + '"><text class="sname" x="' + c.x + '" y="' + y + '" text-anchor="middle">' + escapeHtml(p.fields.title) + '</text>' +
                     '<text class="smeta" x="' + c.x + '" y="' + (y + 20) + '" text-anchor="middle">' + escapeHtml(p.fields.year) + ' · ' + escapeHtml(p.fields.team_label) + '</text></g>';
