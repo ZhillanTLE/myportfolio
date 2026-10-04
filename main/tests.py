@@ -249,3 +249,51 @@ class ExperienceAjaxTest(TestCase):
         self.client.force_login(self.visitor)
         self.assertEqual(self.client.post(url).json(), {"is_starred": True, "star_count": 1})
         self.assertEqual(self.client.post(url).json(), {"is_starred": False, "star_count": 0})
+
+
+class GithubFooterTest(TestCase):
+    SAMPLE = (
+        '<h2 id="js-contribution-activity-description">\n  1,308\n  contributions\n    in the last year\n</h2>'
+        '<td data-date="2025-10-05" id="contribution-day-component-0-0" data-level="0" class="ContributionCalendar-day"></td>'
+        '<td data-date="2025-10-06" id="contribution-day-component-1-0" data-level="3" class="ContributionCalendar-day"></td>'
+        '<tool-tip for="contribution-day-component-0-0">No contributions on October 5th.</tool-tip>'
+        '<tool-tip for="contribution-day-component-1-0">6 contributions on October 6th.</tool-tip>'
+    )
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    def test_parse_calendar(self):
+        from main.github import parse_calendar
+        calendar = parse_calendar(self.SAMPLE)
+        self.assertEqual(calendar["total"], 1308)
+        self.assertEqual(calendar["days"], [
+            {"date": "2025-10-05", "level": 0, "count": 0},
+            {"date": "2025-10-06", "level": 3, "count": 6},
+        ])
+        self.assertIsNone(parse_calendar("<html>not a calendar</html>"))
+
+    def test_endpoint_serves_cached_calendar(self):
+        from unittest import mock
+        from main.github import parse_calendar
+        with mock.patch("main.github.fetch_contributions", return_value=parse_calendar(self.SAMPLE)) as fetch:
+            url = reverse("main:get_github_contributions")
+            first = self.client.get(url)
+            self.client.get(url)
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.json()["total"], 1308)
+        self.assertEqual(fetch.call_count, 1)
+
+    def test_endpoint_reports_unavailable(self):
+        from unittest import mock
+        with mock.patch("main.github.fetch_contributions", side_effect=OSError("offline")):
+            response = self.client.get(reverse("main:get_github_contributions"))
+        self.assertEqual(response.status_code, 503)
+
+    def test_footer_on_every_page(self):
+        for name in ("main:show_main", "main:show_projects", "main:login"):
+            page = self.client.get(reverse(name)).content.decode()
+            self.assertIn('<footer class="zr site-foot"', page)
+            self.assertIn("linkedin.com/in/zhillan-baniaksa", page)
+            self.assertIn("mailto:zhillan.baniaksa@ui.ac.id", page)
