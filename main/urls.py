@@ -13,6 +13,7 @@ from main.views import (
     logout_user,
     toggle_star,
     create_project_ajax,
+    add_teammate,
 )
 app_name = 'main'
 
@@ -30,4 +31,5 @@ urlpatterns = [
     path("logout/", logout_user, name="logout"),
     path("projects/<uuid:project_id>/star/", toggle_star, name="toggle_star"),
     path("projects/add-ajax/", create_project_ajax, name="create_project_ajax"),
+    path("teams/add/", add_teammate, name="add_teammate"),
 ]

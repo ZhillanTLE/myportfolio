@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from main.models import Project, Peer
-from main.forms import ProjectForm, PeerForm
+from main.forms import ProjectForm, PeerForm, TeammateForm, find_or_create_collaborator
 
 
 from django.contrib import messages
@@ -17,6 +17,7 @@ from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.dateformat import format as format_date
 
 
 def show_main(request):
@@ -51,7 +52,7 @@ def _filtered_projects(request):
 
 
 # starred_by is left out on purpose: serialized, it lists every starrer's username
-PUBLIC_FIELDS = ("title", "year", "role", "description", "image",
+PUBLIC_FIELDS = ("title", "year", "role", "context", "description", "image",
                  "tech_stack", "repo_url", "live_url", "order", "peers")
 
 def get_projects_json(request):
@@ -73,6 +74,9 @@ def get_projects_json(request):
             "fields": {
                 "title": project.title,
                 "year": project.year,
+                "role": project.role,
+                "context": project.context,
+                "team_label": project.team_label,
                 "description": project.description,
                 "tech_stack": project.tech_stack,
                 "tech_list": project.tech_list,
@@ -80,7 +84,7 @@ def get_projects_json(request):
                 "repo_url": project.repo_url,
                 "project_image_url": project.image_src if project.image else "",
                 "peers": [
-                    {"name": peer.name, "icon_url": peer.icon_src}
+                    {"pk": str(peer.pk), "name": peer.name, "icon_url": peer.icon_src}
                     for peer in project.peers.all()
                 ],
                 "star_count": len(starred_users),
@@ -103,9 +107,12 @@ def show_projects(request):
     # Projects are fetched by the page itself from get_projects_json (AJAX)
     context = {
         **PROFILE,
-        "peer_list": Peer.objects.filter(show_in_peers=True),
         "title_query": request.GET.get("title", "").strip(),
     }
+    if request.user.has_perm("main.add_project"):
+        context["form"] = ProjectForm()
+    if request.user.has_perm("main.change_project"):
+        context["teammate_form"] = TeammateForm()
     return render(request, "projects.html", context)
 
 
@@ -122,15 +129,7 @@ def _project_form_view(request, project=None):
             icon = request.POST.get("new_peer_icon", "").strip()
             selected = request.POST.getlist("peers")
             if name:
-                peer = Peer.objects.filter(name__iexact=name).first()
-                if peer is None:
-                    peer = Peer.objects.create(
-                        name=name,
-                        icon=icon or "icons/peers/plusicon.jpeg",
-                    )
-                elif icon:
-                    peer.icon = icon
-                    peer.save()
+                peer = find_or_create_collaborator(name, icon)
                 selected.append(str(peer.pk))
             initial = request.POST.dict()
             initial["peers"] = selected
@@ -178,15 +177,33 @@ def delete_project(request, project_id):
     return redirect("main:show_projects")
 
 
+def _wants_json(request):
+    return request.headers.get("x-requested-with") == "XMLHttpRequest"
+
+
 def create_peer(request):
+    """Signs the guestbook. The footer row on every page posts here with fetch; this page is the fallback."""
     form = PeerForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():
         peer = form.save(commit=False)
         peer.show_in_peers = True
         peer.save()
-        messages.success(request, "Peer berhasil ditambahkan!")
-        return redirect("main:show_projects")
+        if _wants_json(request):
+            return JsonResponse({
+                "name": peer.name,
+                "message": peer.message,
+                "icon_url": peer.icon_src,
+                "signed": format_date(peer.created_at, "j M Y"),
+            }, status=201)
+        messages.success(request, "Signed. Thanks for stopping by!")
+        back = request.META.get("HTTP_REFERER", "")
+        if not url_has_allowed_host_and_scheme(back, allowed_hosts={request.get_host()}):
+            back = reverse("main:show_main")
+        return redirect(back.split("#")[0] + "#guestbook")
+
+    if request.method == "POST" and _wants_json(request):
+        return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
 
     context = {
         "name": "Zhillan",
@@ -251,7 +268,7 @@ def toggle_star(request, project_id):
 # Create Project AJAX
 @require_POST
 def create_project_ajax(request):
-    if not request.user.is_superuser:
+    if not request.user.has_perm("main.add_project"):
         return JsonResponse(
             {"message": "Only the portfolio owner can add projects."},
             status=403,
@@ -264,5 +281,19 @@ def create_project_ajax(request):
             {"message": "Project added successfully.", "pk": str(project.id)},
             status=201,
         )
+
+    return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
+
+# Teams: add someone to one or more project teams
+@require_POST
+def add_teammate(request):
+    if not request.user.has_perm("main.change_project"):
+        return JsonResponse({"message": "Only editors can change teams."}, status=403)
+
+    form = TeammateForm(request.POST)
+    if form.is_valid():
+        peer = form.save()
+        return JsonResponse({"message": f"{peer.name} added.", "pk": str(peer.pk)}, status=201)
 
     return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
