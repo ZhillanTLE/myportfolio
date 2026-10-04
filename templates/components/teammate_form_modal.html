@@ -1,0 +1,45 @@
+<div id="add-teammate-modal"
+     class="zr project-form-modal"
+     popover="auto"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="add-teammate-modal-title">
+    <button type="button"
+            class="project-form-modal__backdrop"
+            popovertarget="add-teammate-modal"
+            popovertargetaction="hide"
+            aria-label="Close add teammate form"></button>
+
+    <div class="project-form-modal__content">
+        <button type="button"
+                class="project-form-modal__close"
+                popovertarget="add-teammate-modal"
+                popovertargetaction="hide"
+                aria-label="Close add teammate form">×</button>
+
+        <h2 id="add-teammate-modal-title">Add a teammate</h2>
+        <form id="teammate-form"
+              method="post"
+              action="{% url 'main:add_teammate' %}"
+              class="zr-form">
+            {% csrf_token %}
+            <div class="two">
+                <div class="f"><label for="{{ teammate_form.name.id_for_label }}">{{ teammate_form.name.label }}*</label>{{ teammate_form.name }}</div>
+                <div class="f"><label for="{{ teammate_form.icon.id_for_label }}">{{ teammate_form.icon.label }}</label>{{ teammate_form.icon }}</div>
+            </div>
+            <fieldset class="f" style="border:0">
+                <legend class="lbl">{{ teammate_form.projects.label }}*</legend>
+                {# Filled from the same project data as the diagram, so new projects show up without a reload #}
+                <div class="tags" id="teammate-teams"></div>
+                <p class="hint-line">Already on a team under the same name? They're reused, not duplicated. Tick two teams and they land in the overlap.</p>
+            </fieldset>
+            <div class="form-actions">
+                <button type="button"
+                        class="btn btn-ghost"
+                        popovertarget="add-teammate-modal"
+                        popovertargetaction="hide">Cancel</button>
+                <button type="submit" class="btn">Add to team</button>
+            </div>
+        </form>
+    </div>
+</div>
