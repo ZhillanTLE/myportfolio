@@ -288,13 +288,28 @@
 
     <script>
     /* Teams: each project's builders as a set; whoever is in several sits in the overlap.
-       Up to three sets are drawn at once, a picker chooses which when there are more. */
+       One to three sets are circles; four and five are ellipses, since circles can't show every
+       overlap past three. Up to five sets are drawn at once, a picker chooses which when there are more. */
     var teamsDiagram = (function () {
         var svg = document.getElementById("venn");
         var picker = document.getElementById("team-picker");
         var empty = document.getElementById("teams-empty");
-        var R = 205, AR = 26, MAX_SETS = 3;
+        var R = 205, AR = 26, MAX_SETS = 5;
         var projects = [], chosen = [];
+
+        /* Ellipse layouts in unit space, centred on 0,0, found by searching for the shapes whose
+           smallest region is largest: Venn's four-ellipse figure, and Grünbaum's symmetric five. */
+        var ELLIPSES = {
+            4: (function () {
+                var u = .256, v = .26, q = Math.PI / 4;
+                return { scale: 300, ar: 20, tip: "up", E: [[-u, v, q], [-u / 3, -v, q], [u / 3, -v, -q], [u, v, -q]]
+                    .map(function (e) { return { x: e[0], y: e[1], a: 1.28, b: .57, r: e[2] }; }) };
+            })(),
+            5: { scale: 290, ar: 15, tip: "far", E: [0, 1, 2, 3, 4].map(function (i) {
+                var t = -Math.PI / 2 + i * 2 * Math.PI / 5;
+                return { x: .2 * Math.cos(t), y: .2 * Math.sin(t), a: 1.062, b: .681, r: t + .409 };
+            }) }
+        };
 
         // Circle centres and label spots for one, two or three sets
         function geometry(count) {
@@ -329,29 +344,86 @@
             return { at: at, dir: { x: ox / od, y: oy / od }, max: 2 };
         }
 
-        function slots(reg, count) {
+        // Four or five sets: ellipses in px, a clear spot inside every region, and label spots
+        function ellipseGeometry(count) {
+            var layout = ELLIPSES[count], s = layout.scale;
+            var E = layout.E.map(function (e) { return { x: e.x * s, y: e.y * s, a: e.a * s, b: e.b * s, r: e.r }; });
+
+            // Sample the figure; per region keep the point furthest from any edge
+            var best = {}, ext = 1.3 * s, step = 5;
+            for (var x = -ext; x <= ext; x += step) {
+                for (var y = -ext; y <= ext; y += step) {
+                    var mask = 0, depth = Infinity;
+                    E.forEach(function (e, k) {
+                        var dx = x - e.x, dy = y - e.y, co = Math.cos(e.r), si = Math.sin(e.r);
+                        var u = dx * co + dy * si, v = -dx * si + dy * co;
+                        var q = Math.sqrt(u * u / (e.a * e.a) + v * v / (e.b * e.b));
+                        if (q <= 1) mask |= 1 << k;
+                        depth = Math.min(depth, q ? Math.hypot(dx, dy) * Math.abs(1 - 1 / q) : e.b);
+                    });
+                    if (mask && (!best[mask] || depth > best[mask].depth)) best[mask] = { x: x, y: y, depth: depth };
+                }
+            }
+
+            // Each label sits past one end of its ellipse's long axis
+            var labels = E.map(function (e) {
+                var ex = Math.cos(e.r) * e.a, ey = Math.sin(e.r) * e.a;
+                var plus = { x: e.x + ex, y: e.y + ey }, minus = { x: e.x - ex, y: e.y - ey };
+                var tip = layout.tip === "up"
+                    ? (plus.y < minus.y ? plus : minus)
+                    : (Math.hypot(plus.x, plus.y) > Math.hypot(minus.x, minus.y) ? plus : minus);
+                var d = Math.hypot(tip.x, tip.y) || 1;
+                var spot = { x: tip.x + tip.x / d * 22, y: tip.y + tip.y / d * 22 + (tip.y > 0 ? 18 : 0) };
+                spot.a = spot.x < -40 ? "end" : spot.x > 40 ? "start" : "middle";
+                return spot;
+            });
+
+            var box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
+            function grow(x0, y0, x1, y1) {
+                box.x0 = Math.min(box.x0, x0); box.y0 = Math.min(box.y0, y0);
+                box.x1 = Math.max(box.x1, x1); box.y1 = Math.max(box.y1, y1);
+            }
+            E.forEach(function (e) {
+                var hw = Math.hypot(e.a * Math.cos(e.r), e.b * Math.sin(e.r)), hh = Math.hypot(e.a * Math.sin(e.r), e.b * Math.cos(e.r));
+                grow(e.x - hw, e.y - hh, e.x + hw, e.y + hh);
+            });
+            return { E: E, best: best, labels: labels, ar: layout.ar, box: box, grow: grow };
+        }
+
+        // Where a region's people gather in the ellipse figure, and how many fit around that spot
+        function ellipseRegion(key, g) {
+            var mask = key.split("+").reduce(function (m, k) { return m | (1 << Number(k)); }, 0);
+            var spot = g.best[mask] || { x: 0, y: 0, depth: 0 };
+            var dx = 2 * g.ar + 20, dy = 2 * g.ar + 34, room = 2 * spot.depth - 2 * g.ar;
+            var cols = Math.max(1, Math.min(3, Math.floor(room / dx) + 1));
+            var rows = Math.max(1, Math.min(3, Math.floor((room - 18) / dy) + 1));
+            return { at: { x: spot.x, y: spot.y }, cols: cols, max: cols * rows };
+        }
+
+        function slots(reg, count, ar) {
+            var dx = 2 * ar + 20, dy = 2 * ar + 34;   // 72 and 86 at the full avatar size
             if (reg.dir) {
                 return Array.from({ length: count }, function (_, i) {
-                    var t = (i - (count - 1) / 2) * 86;
+                    var t = (i - (count - 1) / 2) * dy;
                     return { x: reg.at.x + reg.dir.x * t, y: reg.at.y + reg.dir.y * t - 8 };
                 });
             }
             var rows = Math.ceil(count / reg.cols);
             return Array.from({ length: count }, function (_, i) {
                 var row = Math.floor(i / reg.cols), inRow = Math.min(reg.cols, count - row * reg.cols), col = i % reg.cols;
-                return { x: reg.at.x + (col - (inRow - 1) / 2) * 72, y: reg.at.y - 8 + (row - (rows - 1) / 2) * 86 };
+                return { x: reg.at.x + (col - (inRow - 1) / 2) * dx, y: reg.at.y - 8 + (row - (rows - 1) / 2) * dy };
             });
         }
 
-        function personSvg(person, x, y, uid) {
+        function personSvg(person, x, y, uid, ar) {
             var face = person.icon
-                ? '<clipPath id="vc-' + uid + '"><circle cx="' + x + '" cy="' + y + '" r="' + AR + '"/></clipPath>' +
-                  '<image href="' + escapeHtml(person.icon) + '" x="' + (x - AR) + '" y="' + (y - AR) + '" width="' + (2 * AR) + '" height="' + (2 * AR) + '" clip-path="url(#vc-' + uid + ')" preserveAspectRatio="xMidYMid slice"/>'
-                : '<circle class="disc" cx="' + x + '" cy="' + y + '" r="' + AR + '"/><text class="ini" x="' + x + '" y="' + (y + 6) + '" text-anchor="middle">' + escapeHtml(person.name.charAt(0).toUpperCase()) + '</text>';
+                ? '<clipPath id="vc-' + uid + '"><circle cx="' + x + '" cy="' + y + '" r="' + ar + '"/></clipPath>' +
+                  '<image href="' + escapeHtml(person.icon) + '" x="' + (x - ar) + '" y="' + (y - ar) + '" width="' + (2 * ar) + '" height="' + (2 * ar) + '" clip-path="url(#vc-' + uid + ')" preserveAspectRatio="xMidYMid slice"/>'
+                : '<circle class="disc" cx="' + x + '" cy="' + y + '" r="' + ar + '"/><text class="ini" x="' + x + '" y="' + (y + ar * .25) + '" text-anchor="middle" style="font-size:' + Math.round(ar * .7) + 'px">' + escapeHtml(person.name.charAt(0).toUpperCase()) + '</text>';
             return '<g class="person" data-p="' + person.pk + '" data-sets="' + person.sets.join(" ") + '" tabindex="0">' +
                 (person.more ? '<title>' + escapeHtml(person.more) + '</title>' : '') + face +
-                '<circle class="ring" cx="' + x + '" cy="' + y + '" r="' + AR + '"/>' +
-                '<text class="pname" x="' + x + '" y="' + (y + AR + 18) + '" text-anchor="middle">' + escapeHtml(person.name) + '</text></g>';
+                '<circle class="ring" cx="' + x + '" cy="' + y + '" r="' + ar + '"/>' +
+                '<text class="pname" x="' + x + '" y="' + (y + ar + 18) + '" text-anchor="middle">' + escapeHtml(person.name) + '</text></g>';
         }
 
         function draw() {
@@ -361,8 +433,9 @@
             empty.classList.toggle("hide", hasSets);
             if (!hasSets) { svg.innerHTML = ""; return; }
 
-            var g = geometry(sets.length);
-            svg.setAttribute("viewBox", "0 0 1000 " + g.h);
+            var ellipses = sets.length > 3;
+            var g = ellipses ? ellipseGeometry(sets.length) : geometry(sets.length);
+            var ar = ellipses ? g.ar : AR;
 
             // Which of the drawn sets each person belongs to
             var people = {};
@@ -380,10 +453,22 @@
 
             var out = "";
             sets.forEach(function (p, i) {
-                out += '<circle class="set" data-j="' + i + '" cx="' + g.C[i].x + '" cy="' + g.C[i].y + '" r="' + R + '"/>';
+                if (ellipses) {
+                    var e = g.E[i];
+                    out += '<ellipse class="set" data-j="' + i + '" cx="' + e.x + '" cy="' + e.y + '" rx="' + e.a + '" ry="' + e.b +
+                        '" transform="rotate(' + (e.r * 180 / Math.PI) + ' ' + e.x + ' ' + e.y + ')"/>';
+                } else {
+                    out += '<circle class="set" data-j="' + i + '" cx="' + g.C[i].x + '" cy="' + g.C[i].y + '" r="' + R + '"/>';
+                }
             });
             sets.forEach(function (p, i) {
-                var l = labelSpot(g.C[i], i, sets.length);
+                var l = ellipses ? g.labels[i] : labelSpot(g.C[i], i, sets.length);
+                if (ellipses) {
+                    // Rough text width, so the viewBox leaves room for the label
+                    var w = Math.max(p.fields.title.length * 14, (p.fields.year + p.fields.team_label).length * 7 + 30);
+                    var x0 = l.a === "end" ? l.x - w : l.a === "start" ? l.x : l.x - w / 2;
+                    g.grow(x0, l.y - 26, x0 + w, l.y + 26);
+                }
                 out += '<g class="slabel" data-j="' + i + '"><text class="sname" x="' + l.x + '" y="' + l.y + '" text-anchor="' + l.a + '">' + escapeHtml(p.fields.title) + '</text>' +
                     '<text class="smeta" x="' + l.x + '" y="' + (l.y + 20) + '" text-anchor="' + l.a + '">' + escapeHtml(p.fields.year) + ' · ' + escapeHtml(p.fields.team_label) + '</text></g>';
             });
@@ -395,9 +480,10 @@
             }
             var uid = 0;
             keys.forEach(function (key) {
-                var reg = region(key, g), members = regions[key] || [];
+                var reg = ellipses ? ellipseRegion(key, g) : region(key, g), members = regions[key] || [];
                 if (!members.length) {
-                    if (sets.length > 1) out += '<text class="empty" x="' + reg.at.x + '" y="' + (reg.at.y + 5) + '" text-anchor="middle">∅</text>';
+                    // Past three sets most overlaps are empty; marking them all would only add noise
+                    if (sets.length > 1 && !ellipses) out += '<text class="empty" x="' + reg.at.x + '" y="' + (reg.at.y + 5) + '" text-anchor="middle">∅</text>';
                     return;
                 }
                 var shown = members;
@@ -408,10 +494,16 @@
                         more: rest.map(function (m) { return m.name; }).join(", ")
                     }]);
                 }
-                slots(reg, shown.length).forEach(function (spot, i) { out += personSvg(shown[i], spot.x, spot.y, uid++); });
+                slots(reg, shown.length, ar).forEach(function (spot, i) { out += personSvg(shown[i], spot.x, spot.y, uid++, ar); });
             });
             svg.innerHTML = out;
 
+            if (ellipses) {
+                var pad = 24, b = g.box;
+                svg.setAttribute("viewBox", [b.x0 - pad, b.y0 - pad, b.x1 - b.x0 + 2 * pad, b.y1 - b.y0 + 2 * pad].join(" "));
+            } else {
+                svg.setAttribute("viewBox", "0 0 1000 " + g.h);
+            }
             svg.setAttribute("aria-label", sets.map(function (p) {
                 return p.fields.title + ": " + p.fields.peers.map(function (peer) { return peer.name; }).join(", ");
             }).join(". "));
