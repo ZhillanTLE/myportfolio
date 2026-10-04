@@ -75,3 +75,77 @@ class MainTest(TestCase):
 
         self.assertLess(html.index("Zayyan"), html.index("Bagas"))
         self.assertLess(html.index("Bagas"), html.index("Nia"))
+
+
+class TeamsAndGuestbookTest(TestCase):
+    def setUp(self):
+        from django.contrib.auth.models import User
+
+        # Migration 0004 seeds the real projects and peers; start from nothing
+        Project.objects.all().delete()
+        Peer.objects.all().delete()
+        self.zhillan = Peer.objects.create(name="Zhillan", icon="icons/peers/zhillanicon.jpeg")
+        self.others = Peer.objects.create(name="+34 Others", icon="icons/peers/plusicon.jpeg")
+        self.arung = Project.objects.create(
+            title="Arung", year="2025", role="Head of UIUX", context="Cohort site",
+            description="A cohort site.", image="img/projects/ArungSnapshot.jpeg", tech_stack="",
+        )
+        self.arung.peers.add(self.zhillan, self.others)
+        self.admin = User.objects.create_superuser("owner", password="pw-owner-123")
+
+    def test_team_label_counts_placeholder_peers(self):
+        self.assertEqual(self.arung.team_label, "1 + 34 others")
+
+    def test_projects_json_has_role_context_team(self):
+        fields = self.client.get(reverse("main:get_projects_json")).json()[0]["fields"]
+        self.assertEqual(fields["context"], "Cohort site")
+        self.assertEqual(fields["team_label"], "1 + 34 others")
+        self.assertIn("pk", fields["peers"][0])
+
+    def test_add_teammate_needs_permission(self):
+        response = self.client.post(reverse("main:add_teammate"), {"name": "Lefi", "projects": [self.arung.pk]})
+        self.assertEqual(response.status_code, 403)
+
+    def test_add_teammate_reuses_collaborator_not_guest(self):
+        Peer.objects.create(name="Zhillan", message="hi", show_in_peers=True)
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("main:add_teammate"), {"name": "zhillan", "projects": [self.arung.pk]})
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["pk"], str(self.zhillan.pk))
+        self.assertEqual(Peer.objects.filter(show_in_peers=False, name__iexact="zhillan").count(), 1)
+
+    def test_add_teammate_requires_a_team(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("main:add_teammate"), {"name": "Lefi"})
+        self.assertEqual(response.status_code, 400)
+
+    def test_project_form_accepts_new_builder_instead_of_chip(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("main:create_project_ajax"), {
+            "title": "Windfall", "year": "2026", "image": "img/projects/WindfallSnapshot2.jpeg",
+            "role": "AI Engineer", "context": "Ranked 6", "description": "Rebuilds carts.",
+            "new_peer": "Micguel",
+        })
+        self.assertEqual(response.status_code, 201)
+        project = Project.objects.get(title="Windfall")
+        self.assertEqual([p.name for p in project.peers.all()], ["Micguel"])
+
+    def test_project_form_needs_a_builder(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("main:create_project_ajax"), {
+            "title": "Windfall", "year": "2026", "image": "x.png", "role": "AI", "context": "c", "description": "d",
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("peers", response.json()["errors"])
+
+    def test_guestbook_signs_with_fetch_and_renders(self):
+        response = self.client.post(
+            reverse("main:create_peer"), {"name": "Tania", "message": "<b>hello</b>"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["message"], "hello")
+        self.assertEqual(response.json()["icon_url"], "")
+        page = self.client.get(reverse("main:show_projects")).content.decode()
+        self.assertIn('<span class="nm">Tania</span>', page)
+        self.assertIn('id="sign-no">02<', page)
