@@ -368,3 +368,48 @@
 @media (prefers-reduced-motion: reduce) {
     .zr .pcard, .zr .spec.is-active, .zr .log-row.is-new { transition: none !important; animation: none !important; }
 }
+
+/* ---------- Site footer: GitHub contributions and contact, full width ---------- */
+.zr.site-foot {
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+    padding-block: clamp(40px, 5vw, 72px) clamp(32px, 4vw, 56px);
+}
+.zr .foot-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px 32px;
+    margin-bottom: clamp(20px, 2.4vw, 32px);
+}
+.zr .foot-gh { margin: 0; font-size: clamp(1rem, 1.5vw, 1.2rem); }
+.zr .foot-gh a { color: var(--mute); text-decoration: none; }
+.zr .foot-gh #gh-total { color: var(--ink); font-weight: 600; }
+.zr .foot-gh .u { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--faint); transition: text-decoration-color .2s ease; }
+.zr .foot-gh a:hover .u { text-decoration-color: var(--ink); }
+.zr .foot-contact { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 22px; }
+.zr .foot-contact a { color: var(--ink); text-decoration: none; font-size: .95rem; }
+.zr .foot-contact a:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+/* contributions.js draws only the weeks that fit; overflow stays hidden for the moment before a redraw */
+.zr .gh-graph { display: flex; justify-content: flex-end; overflow: hidden; }
+.zr .gh-graph[hidden] { display: none; }
+.zr .gh-grid {
+    --cell-min: 9px;   /* contributions.js reads this to decide how many weeks fit */
+    flex: 1 0 auto;
+    display: grid;
+    grid-template-columns: repeat(var(--weeks, 53), minmax(var(--cell-min), 1fr));
+    gap: clamp(2px, .32vw, 5px);
+}
+.zr .gh-m { grid-row: 1; margin-bottom: 6px; white-space: nowrap; }
+.zr .gh-d { aspect-ratio: 1; border-radius: 2px; background: #1c1c1c; }
+.zr .gh-d[data-l="1"] { background: #3d3d3d; }
+.zr .gh-d[data-l="2"] { background: #6e6e6e; }
+.zr .gh-d[data-l="3"] { background: #a6a6a6; }
+.zr .gh-d[data-l="4"] { background: #ececec; }
+
+@media (max-width: 700px) {
+    .zr .foot-row { flex-direction: column; }
+    .zr .gh-grid { --cell-min: 13px; }
+}
