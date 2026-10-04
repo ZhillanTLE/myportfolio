@@ -2,12 +2,15 @@
 {% load static %}
 {% block content %}
     <main>
-        <section class="experience" id="experience">
-            <div class="container">
+        <section class="zr exp" id="experience">
+            <div class="zr-wrap">
                 <!-- Skeleton only: the roles are fetched from get_experiences_json below -->
-                <div class="exp-head">
-                    <h2 class="section-title">Experience<sup id="experience-count"></sup></h2>
-                    <div class="zr exp-tools">
+                <div class="sec-head">
+                    <div>
+                        <h2 class="sec">Experience<sup id="experience-count"></sup></h2>
+                        <p class="lbl" style="margin-top:14px">where I've clocked in</p>
+                    </div>
+                    <div class="sec-side">
                         <form id="experience-search-form" class="search" role="search">
                             <input type="search"
                                    id="experience-search"
@@ -22,13 +25,13 @@
                     </div>
                 </div>
 
-                <p id="experience-loading" class="exp-state" role="status">loading experience…</p>
-                <div id="experience-error" class="exp-state hide" role="alert">
+                <p id="experience-loading" class="state lbl" role="status">loading experience…</p>
+                <div id="experience-error" class="state hide" role="alert">
                     Failed to load experience.
                     <button type="button" class="exp-retry" id="experience-retry">try again</button>
                 </div>
-                <p id="experience-empty" class="exp-state hide"></p>
-                <div id="experience-list" class="hide" aria-live="polite"></div>
+                <p id="experience-empty" class="state hide"></p>
+                <div id="experience-list" class="roles hide" aria-live="polite"></div>
             </div>
         </section>
         <section class="zr work" id="projects">

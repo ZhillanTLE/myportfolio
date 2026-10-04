@@ -109,6 +109,41 @@
 .zr .state { padding-block: 48px; color: var(--mute); }
 
 
+/* ---------- Experience: rows drawn by fetch, row styles shared with style.css ---------- */
+.zr.exp {
+    padding-block: clamp(64px, 9vw, 128px) 0;
+    --date-col: 8rem;
+    --rule-col: 5rem;
+    --row-gap: 1rem;
+    --row-scale: 1rem;
+}
+.zr .roles { border-top: 1px solid var(--line); }
+.zr .role { border-bottom-color: var(--line); }
+.zr .role-title { margin: 0; font-weight: 600; letter-spacing: -.015em; }
+.zr .role-dates { font-family: var(--mono); font-stretch: 87.5%; font-weight: 400; font-size: .66rem; letter-spacing: .06em; color: var(--mute); }
+.zr .role-org { margin: 0 0 .8rem; color: var(--mute); }
+.zr .role-points li { color: var(--mute); line-height: 1.55; }
+.zr .role-points li::before { background-color: var(--ink); }
+.zr .role-chevron { border-color: var(--mute); }
+
+/* Phones: dates sit above the title instead of beside it, so the title gets the full width */
+@media (max-width: 700px) {
+    .zr.exp .search { flex: 1 1 100%; }
+    .zr.exp .search input { width: 100%; }
+    .zr .role-header {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: "dates chevron" "title chevron";
+        gap: 6px 16px;
+        padding: 1rem 0;
+    }
+    .zr .role-dates { grid-area: dates; }
+    .zr .role-rule { display: none; }
+    .zr .role-title { grid-area: title; font-size: 1.05rem; }
+    .zr .role-chevron { grid-area: chevron; }
+    .zr .role-points { padding-left: 0; }
+    .zr .role-points li { font-size: .92rem; }
+}
+
 /* ---------- Recent projects: deck + spec ---------- */
 .zr.work { padding-block: clamp(64px, 9vw, 128px) 0; }
 .zr .pwork {

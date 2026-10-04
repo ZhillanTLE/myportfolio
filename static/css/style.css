@@ -382,41 +382,7 @@ h1, .brand {
     margin-bottom: 0;
 }
 
-/* Experience toolbar and states (the list itself is drawn by fetch) */
-.exp-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 1rem 2rem;
-    margin-bottom: 2rem;
-}
-
-.exp-head .section-title {
-    margin-bottom: 0;
-}
-
-.exp-head .section-title sup {
-    margin-left: 0.4rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-muted);
-    vertical-align: super;
-}
-
-.exp-tools {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px 14px;
-}
-
-.exp-state {
-    padding: 2rem 0;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--line);
-}
-
+/* Experience retry link and star row (the list itself is drawn by fetch) */
 .exp-retry {
     margin-left: 0.5rem;
     padding: 0;
