@@ -107,6 +107,8 @@
 .zr .search input::placeholder { color: var(--faint); }
 
 .zr .state { padding-block: 48px; color: var(--mute); }
+/* Quiet captions in the hero bio's voice: same face, sentence case */
+.zr .say { margin: 0; font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: .95rem; text-transform: none; letter-spacing: normal; color: var(--mute); }
 
 
 /* ---------- Experience: rows drawn by fetch, row styles shared with style.css ---------- */
@@ -294,7 +296,8 @@
 .zr .log-row:hover img { filter: none; }
 .zr .log-row .nm { font-weight: 700; font-size: 1.05rem; overflow-wrap: anywhere; }
 .zr .log-row .nt { color: var(--mute); overflow-wrap: anywhere; }
-.zr .log-row .dt, .zr .log-row .dt-h { font-family: var(--mono); font-stretch: 87.5%; font-size: .66rem; color: var(--mute); text-align: right; }
+.zr .log-row .dt { font-family: var(--mono); font-stretch: 87.5%; font-size: .66rem; color: var(--mute); text-align: right; }
+.zr .log-row .dt-h { text-align: right; }
 .zr .log-row.is-new { animation: spec-in .4s var(--ease); }
 .zr .log-row.sign input {
     width: 100%;
