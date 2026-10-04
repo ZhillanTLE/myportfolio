@@ -7,7 +7,7 @@
                 <!-- Skeleton only: the roles are fetched from get_experiences_json below -->
                 <div class="sec-head">
                     <div>
-                        <h2 class="sec">Experience<sup id="experience-count"></sup></h2>
+                        <h2 class="sec">Experience</h2>
                         <p class="lbl" style="margin-top:14px">where I've clocked in</p>
                     </div>
                     <div class="sec-side">
@@ -38,7 +38,7 @@
             <div class="zr-wrap">
                 <div class="sec-head">
                     <div>
-                        <h1 class="sec">Recent projects<sup id="project-count"></sup></h1>
+                        <h1 class="sec">Recent projects</h1>
                         <p class="lbl" style="margin-top:14px">proof(s) I don't sleep</p>
                     </div>
                     <div class="sec-side">
@@ -515,7 +515,6 @@
     const gridContainer = document.getElementById('grid');
     const stackContainer = gridContainer.querySelector('.stack');
     const specsContainer = gridContainer.querySelector('.specs');
-    const projectCount = document.getElementById('project-count');
     const searchForm = document.getElementById('project-search-form');
     const searchInput = document.getElementById('search-input');
 
@@ -617,7 +616,6 @@
             : '';
 
         articleElement.innerHTML = `
-            <p class="lbl">${pad2(index + 1)} · ${escapeHtml(project.year)}</p>
             <h2 class="pt">${escapeHtml(project.title)}</h2>
             <p class="plead">${escapeHtml(lead)}</p>
             <dl class="specdl">
@@ -672,7 +670,6 @@
             if (!response.ok) throw new Error('Failed to fetch data');
 
             const projectData = await response.json();
-            projectCount.textContent = pad2(projectData.length);
 
             if (searchQuery) fetchTeams();
             else renderTeams(projectData);
@@ -773,7 +770,6 @@
         const errorState = document.getElementById('experience-error');
         const emptyState = document.getElementById('experience-empty');
         const list = document.getElementById('experience-list');
-        const count = document.getElementById('experience-count');
         const searchForm = document.getElementById('experience-search-form');
         const searchInput = document.getElementById('experience-search');
 
@@ -850,7 +846,6 @@
                 if (!response.ok) throw new Error(`Status ${response.status}`);
                 const experiences = await response.json();
 
-                count.textContent = pad2(experiences.length);
                 if (experiences.length === 0) {
                     emptyState.textContent = query ? `No experience matches “${query}”.` : 'No experience added yet.';
                     show({ empty: true });
