@@ -1051,3 +1051,43 @@ button.social-link {
 
 
 }
+
+
+/* Motion: light and quick, and all of it off for anyone who asks for reduced motion.
+   Animations fill backwards only, so once they end they never override hover or focus styles. */
+@keyframes rise-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    /* Moving between pages: a short cross-fade where the browser supports it */
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root),
+    ::view-transition-new(root) { animation-duration: .25s; }
+
+    .site-header { animation: fade-in .5s ease backwards; }
+    main { animation: rise-in .6s cubic-bezier(.2, .8, .2, 1) .05s backwards; }
+
+    /* Sections that start below the screen rise in as they are reached (motion.js adds these classes) */
+    .reveal {
+        opacity: 0;
+        transform: translateY(24px);
+        transition: opacity .7s cubic-bezier(.2, .8, .2, 1), transform .7s cubic-bezier(.2, .8, .2, 1);
+    }
+    .reveal.is-in { opacity: 1; transform: none; }
+
+    /* Content that arrives by fetch */
+    #experience-list .role { animation: rise-in .45s cubic-bezier(.2, .8, .2, 1) backwards; animation-delay: calc(var(--i, 0) * 45ms); }
+    .zr .gh-grid.is-entering .gh-d { animation: fade-in .4s ease backwards; animation-delay: calc(var(--c, 0) * 14ms); }
+    .zr .venn.is-drawn .set,
+    .zr .venn.is-drawn .slabel,
+    .zr .venn.is-drawn .link,
+    .zr .venn.is-drawn .person { animation: fade-in .5s ease backwards; }
+    .zr .venn.is-drawn .person { animation-delay: .15s; }
+}
