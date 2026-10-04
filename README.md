@@ -6,7 +6,8 @@ NPM : 2506637174
 Class : PBP KKI
 
 **live:** https://zhillan-baniaksa-myportfolio.pws.cs.ui.ac.id
-**current state:** pushing to pws.
+
+**updated**: 04/10/2026
 
 do run Local Setup for grading measures:
 ### Local Setup
