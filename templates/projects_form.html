@@ -26,12 +26,14 @@
                         {% include "components/form_field.html" with field=form.year %}
                     </div>
 
-                    {% include "components/form_field.html" with field=form.role %}
                     {% include "components/form_field.html" with field=form.image %}
+                    {% include "components/form_field.html" with field=form.role %}
                     {% include "components/form_field.html" with field=form.tech_stack %}
+                    {% include "components/form_field.html" with field=form.context %}
+                    {% include "components/form_field.html" with field=form.description %}
 
                     <div class="field">
-                        <label for="{{ form.new_peer.id_for_label }}">Builders*</label>
+                        <label for="{{ form.new_peer.id_for_label }}">Built by*</label>
                         <div class="collab-input">
                             {{ form.new_peer }}
                             {{ form.new_peer_icon }}
@@ -53,8 +55,6 @@
 
                     {% include "components/form_field.html" with field=form.repo_url %}
                     {% include "components/form_field.html" with field=form.live_url %}
-                    {% include "components/form_field.html" with field=form.description %}
-                    {% include "components/form_field.html" with field=form.order %}
 
                     <div class="actions">
                         <button type="submit" class="submit">{% if project %}Save changes{% else %}Submit{% endif %}</button>
