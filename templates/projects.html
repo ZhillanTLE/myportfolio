@@ -85,7 +85,6 @@
                 <div class="sec-head">
                     <h2 class="sec">Teams</h2>
                     <div class="sec-side">
-                        <p class="lbl" id="teams-sum"></p>
                         {% if teammate_form %}
                         <button type="button" class="btn" popovertarget="add-teammate-modal">+ add teammate</button>
                         {% endif %}
@@ -293,11 +292,9 @@
     var teamsDiagram = (function () {
         var svg = document.getElementById("venn");
         var picker = document.getElementById("team-picker");
-        var summary = document.getElementById("teams-sum");
         var empty = document.getElementById("teams-empty");
         var R = 205, AR = 26, MAX_SETS = 3;
         var projects = [], chosen = [];
-        var WORDS = ["", "one", "two", "three"];
 
         // Circle centres and label spots for one, two or three sets
         function geometry(count) {
@@ -362,7 +359,7 @@
             var hasSets = sets.length > 0;
             svg.classList.toggle("hide", !hasSets);
             empty.classList.toggle("hide", hasSets);
-            if (!hasSets) { summary.textContent = ""; svg.innerHTML = ""; return; }
+            if (!hasSets) { svg.innerHTML = ""; return; }
 
             var g = geometry(sets.length);
             svg.setAttribute("viewBox", "0 0 1000 " + g.h);
@@ -415,17 +412,6 @@
             });
             svg.innerHTML = out;
 
-            // Headline: who sits in the most teams
-            var shared = Object.keys(people).map(function (pk) { return people[pk]; })
-                .filter(function (p) { return p.sets.length > 1; })
-                .sort(function (a, b) { return b.sets.length - a.sets.length; });
-            var bits = [sets.length + (sets.length === 1 ? " team" : " teams")];
-            shared.slice(0, 2).forEach(function (p) {
-                var all = p.sets.length === sets.length;
-                bits.push(p.name.toLowerCase() + " in " + (all && sets.length > 2 ? "all " : "") + (WORDS[p.sets.length] || p.sets.length));
-            });
-            if (sets.length > 1 && !shared.length) bits.push("no overlap");
-            summary.textContent = bits.join(" · ");
             svg.setAttribute("aria-label", sets.map(function (p) {
                 return p.fields.title + ": " + p.fields.peers.map(function (peer) { return peer.name; }).join(", ");
             }).join(". "));
