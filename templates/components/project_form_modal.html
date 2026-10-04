@@ -1,5 +1,5 @@
 <div id="add-project-modal"
-     class="project-form-modal"
+     class="zr project-form-modal"
      popover="auto"
      role="dialog"
      aria-modal="true"
@@ -17,27 +17,50 @@
                 popovertargetaction="hide"
                 aria-label="Close add project form">×</button>
 
-        <h2 id="add-project-modal-title">Add a New Project</h2>
+        <h2 id="add-project-modal-title">Add a project</h2>
         <form id="project-form"
               method="post"
               action="{% url 'main:create_project' %}"
-              class="project-form">
+              class="zr-form">
             {% csrf_token %}
-            {% for field in form %}
-                <div class="form-group">
-                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                    {{ field }}
-                    {% for error in field.errors %}
-                        <p class="form-error">{{ error }}</p>
+            <div class="two">
+                <div class="f"><label for="{{ form.title.id_for_label }}">{{ form.title.label }}*</label>{{ form.title }}</div>
+                <div class="f"><label for="{{ form.year.id_for_label }}">{{ form.year.label }}*</label>{{ form.year }}</div>
+            </div>
+            <div class="f"><label for="{{ form.image.id_for_label }}">{{ form.image.label }}*</label>{{ form.image }}</div>
+            <div class="two">
+                <div class="f"><label for="{{ form.role.id_for_label }}">{{ form.role.label }}*</label>{{ form.role }}</div>
+                <div class="f"><label for="{{ form.tech_stack.id_for_label }}">{{ form.tech_stack.label }}</label>{{ form.tech_stack }}</div>
+            </div>
+            <div class="f"><label for="{{ form.context.id_for_label }}">{{ form.context.label }}*</label>{{ form.context }}</div>
+            <div class="f">
+                <label for="{{ form.description.id_for_label }}">{{ form.description.label }}*</label>
+                {{ form.description }}
+                <p class="hint-line">The first sentence, or first paragraph, becomes the headline.</p>
+            </div>
+            <fieldset class="f" style="border:0">
+                <legend class="lbl">{{ form.peers.label }}*</legend>
+                <div class="tags" id="builder-tags">
+                    {% for peer in form.peers %}
+                        {{ peer.tag }}<label for="{{ peer.id_for_label }}">{{ peer.choice_label }}</label>
                     {% endfor %}
                 </div>
-            {% endfor %}
-            <div class="project-form-modal__actions">
+                <div class="new-peer">
+                    {{ form.new_peer }}
+                    {{ form.new_peer_icon }}
+                </div>
+                <p class="hint-line">Not listed? Type a new collaborator and they're added with the project.</p>
+            </fieldset>
+            <div class="two">
+                <div class="f"><label for="{{ form.repo_url.id_for_label }}">{{ form.repo_url.label }}</label>{{ form.repo_url }}</div>
+                <div class="f"><label for="{{ form.live_url.id_for_label }}">{{ form.live_url.label }}</label>{{ form.live_url }}</div>
+            </div>
+            <div class="form-actions">
                 <button type="button"
-                        class="button button-secondary"
+                        class="btn btn-ghost"
                         popovertarget="add-project-modal"
                         popovertargetaction="hide">Cancel</button>
-                <button type="submit" class="button">Add Project</button>
+                <button type="submit" class="btn">Add project</button>
             </div>
         </form>
     </div>

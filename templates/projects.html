@@ -75,92 +75,138 @@
                 </details>
             </div>
         </section>
-        <section class="projects" id="projects">
-            <div class="container">
-                <div class="projects-head">
-                    <div class="projects-title">
-                        <h1>Recent Projects</h1>
-                        {% if perms.main.add_project %}
-                        <button type="button"
-                                class="button project-add-button"
-                                popovertarget="add-project-modal">
-                            <span aria-hidden="true">+</span>
-                        Add Project
-                        </button>
+        <section class="zr work" id="projects">
+            <div class="zr-wrap">
+                <div class="sec-head">
+                    <div>
+                        <h1 class="sec">Recent projects<sup id="project-count"></sup></h1>
+                        <p class="lbl" style="margin-top:14px">proof(s) I don't sleep</p>
+                    </div>
+                    <div class="sec-side">
+                        <form id="project-search-form" class="search" role="search">
+                            <input type="search"
+                                   id="search-input"
+                                   name="title"
+                                   value="{{ title_query }}"
+                                   placeholder="search by project name"
+                                   aria-label="Search by project name">
+                            <button type="submit" class="btn btn-ghost">search</button>
+                        </form>
+                        {% if form %}
+                        <button type="button" class="btn" popovertarget="add-project-modal">+ add project</button>
                         {% endif %}
                     </div>
-                    <p class="projects-sub">proof(s) I don't sleep</p>
-
-                    <form id="project-search-form" class="project-search">
-                        <input type="search"
-                               id="search-input"
-                               name="title"
-                               value="{{ title_query }}"
-                               placeholder="Search by project name"
-                               class="project-search__input"
-                               aria-label="Search by project name">
-                        <button type="submit" class="social-link">Search</button>
-                    </form>
                 </div>
 
-                <!-- Loading State -->
-                <div id="loading" class="empty-state hide">
-                    <p>Loading projects...</p>
-                </div>
+                <div id="loading" class="state lbl hide">loading projects…</div>
+                <div id="error" class="state hide">Failed to load project data. Please try again.</div>
+                <div id="empty" class="state hide">No projects have been added or found yet.</div>
 
-                <!-- Error State -->
-                <div id="error" class="empty-state hide">
-                    <p>Failed to load project data. Please try again.</p>
-                </div>
-
-                <!-- Empty State -->
-                <div id="empty" class="empty-state hide">
-                    <p>No projects have been added or found yet.</p>
-                </div>
-
-                <!-- Project Grid: stack cards on top, the front card's details below -->
-                <div id="grid" class="deck hide">
-                    <div class="deck-stack" tabindex="0" role="group"
-                         aria-roledescription="carousel"
-                         aria-label="Project screenshots. Drag the front card, or press the arrow keys, to see the next one.">
+                <!-- Deck on the left, the front card's details on the right -->
+                <div id="grid" class="pwork hide">
+                    <div class="deckcol">
+                        <div class="stage">
+                            <div class="stack" tabindex="0" role="group"
+                                 aria-roledescription="carousel"
+                                 aria-label="Projects. Drag or throw the front card, or use the arrow keys."></div>
+                        </div>
+                        <div class="deck-ctl">
+                            <button type="button" class="ctl" id="deck-prev" aria-label="Previous project">←</button>
+                            <span class="deck-pos" id="deck-pos">01 / 01</span>
+                            <button type="button" class="ctl" id="deck-next" aria-label="Next project">→</button>
+                        </div>
+                        <p class="lbl hint">drag, throw, or use ← →</p>
                     </div>
-
-                    <div class="deck-details"></div>
+                    <div class="specs" aria-live="polite"></div>
                 </div>
             </div>
         </section>
-        <section class="peers" id="peers">
-            <div class="container">
-                <div class="peers-title">
-                    <h2 class="section-title">Peers</h2>
-                    <a class="peers-to-add" href="{% url 'main:create_peer' %}">+ Add Yourself!</a>
-                </div>
-                <div class="marquee marquee-notes" data-rows="1" data-speed="28" aria-label="Peers">
-                    <div class="marquee-track">
-                        {% for peer in peer_list %}
-                            <span class="peer-tag">
-                                <img class="peer-tag-avatar" src="{{ peer.icon_src }}" alt="">
-                                {{ peer.name }}
-                            </span>
-                        {% endfor %}
+
+        <section class="zr teams" id="teams">
+            <div class="zr-wrap">
+                <div class="sec-head">
+                    <h2 class="sec">Teams</h2>
+                    <div class="sec-side">
+                        <p class="lbl" id="teams-sum"></p>
+                        {% if teammate_form %}
+                        <button type="button" class="btn" popovertarget="add-teammate-modal">+ add teammate</button>
+                        {% endif %}
                     </div>
                 </div>
+                <div class="picker" id="team-picker" role="group" aria-label="Teams to compare, up to three" hidden></div>
+                <div class="venn-wrap"><svg class="venn" id="venn" viewBox="0 0 1000 700" role="img" aria-label="Project teams"></svg></div>
+                <p class="state hide" id="teams-empty">No teams yet. Add a project and its builders show up here.</p>
             </div>
         </section>
+
     </main>
-    {% if user.is_superuser %}
+    {% if form %}
         {% include "components/project_form_modal.html" %}
+    {% endif %}
+    {% if teammate_form %}
+        {% include "components/teammate_form_modal.html" %}
     {% endif %}
 
     <script>
+    /* Shared helpers */
+    const REDUCE_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const STAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg>';
 
+    // JSON values go into innerHTML, so escape them first
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value ?? '';
+        return div.innerHTML.replace(/"/g, '&quot;');
+    }
+    function pad2(n) { return (n < 10 ? '0' : '') + n; }
+    function host(url) { return url ? url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') : ''; }
+
+    // Headline = first paragraph if there are several, else the first sentence; the rest is body text
+    function splitDescription(text) {
+        const clean = (text || '').replace(/\r\n/g, '\n').trim();
+        const paragraphs = clean.split(/\n\s*\n/);
+        if (paragraphs.length > 1) return { lead: paragraphs[0], body: paragraphs.slice(1).join('\n\n') };
+        const sentence = clean.match(/^([\s\S]+?[.!?])\s+(?=[A-Z0-9"'])/);
+        if (sentence && sentence[1].length <= 180) return { lead: sentence[1], body: clean.slice(sentence[0].length) };
+        return { lead: clean, body: '' };
+    }
+
+    // Read a cookie value, used to get the CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function errorText(result, status) {
+        return result.errors
+            ? Object.values(result.errors).flat().map(error => error.message).join(' ')
+            : (result.message || `Something went wrong (status ${status}).`);
+    }
+    </script>
+
+    <script>
     /* Card deck: the AJAX script below fills the deck, then calls projectDeck.reset() */
     var projectDeck = (function () {
-        var stack = document.querySelector(".deck-stack");
-        var cards = [], details = [], n = 0, active = 0;
-        var SWIPE_PX = 90;     // drag further than this to commit the swipe
-        var LEAVE_MS = 400;    // must match the .stack-card transition duration in CSS
-        var busy = false, leaveTimer = null;
+        var stack = document.querySelector("#grid .stack");
+        var specsBox = document.querySelector("#grid .specs");
+        var pos = document.getElementById("deck-pos");
+        var prev = document.getElementById("deck-prev");
+        var next = document.getElementById("deck-next");
+        var cards = [], specs = [], n = 0, active = 0;
+        var THROW_PX = 110;    // drag further than this to commit the throw
+        var FLICK = 0.7;       // or release faster than this (px per ms) after 30px
+        var LEAVE_MS = 430;    // must match the .pcard transition in work.css
+        var busy = false, leaveTimer = null, drag = null;
 
         function layout() {
             cards.forEach(function (card, i) {
@@ -168,147 +214,324 @@
                 card.setAttribute("data-depth", depth);
                 card.setAttribute("aria-hidden", depth === 0 ? "false" : "true");
             });
-            details.forEach(function (d, i) {
-                d.classList.toggle("is-active", i === active);
-            });
+            specs.forEach(function (spec, i) { spec.classList.toggle("is-active", i === active); });
+            pos.textContent = pad2(active + 1) + " / " + pad2(n);
+            prev.disabled = next.disabled = n < 2;
         }
-        
+
+        function clearVars(card) {
+            ["--dx", "--dy", "--rot", "--rx", "--ry"].forEach(function (v) { card.style.removeProperty(v); });
+        }
+
         function advance(direction) {
             if (busy || n < 2) return;
             busy = true;
             var front = cards[active];
-            front.setAttribute("data-leave", direction < 0 ? "left" : "right");
-            front.classList.add("is-leaving");
+            front.classList.remove("live", "dragging", "spring");
+            front.classList.add(direction < 0 ? "out-l" : "out-r");
             leaveTimer = setTimeout(function () {
-                front.classList.add("no-transition");
-                front.classList.remove("is-leaving");
-                front.removeAttribute("data-leave");
+                front.classList.add("snap");
+                front.classList.remove("out-l", "out-r");
+                clearVars(front);
                 active = (active + 1) % n;
                 layout();
                 void front.offsetWidth;   // flush styles so the jump to the back is instant, not animated
-                front.classList.remove("no-transition");
+                front.classList.remove("snap");
                 busy = false;
-            }, LEAVE_MS);
+            }, REDUCE_MOTION ? 0 : LEAVE_MS);
         }
 
-        /* Drag / swipe on the front card */
-        var dragging = false, startX = 0, dx = 0;
+        function goBack() {
+            if (busy || n < 2) return;
+            active = (active - 1 + n) % n;
+            layout();
+        }
 
+        /* Drag / throw the front card */
         stack.addEventListener("pointerdown", function (e) {
-            if (busy || !n) return;
             var front = cards[active];
-            if (!front.contains(e.target) || e.target.closest("a")) return;
-            dragging = true;
-            startX = e.clientX;
-            dx = 0;
-            front.classList.add("is-dragging");
+            if (busy || !front || !front.contains(e.target) || e.target.closest("a, button")) return;
+            var t = performance.now();
+            drag = { x: e.clientX, y: e.clientY, dx: 0, lx: e.clientX, lt: t, vx: 0 };
+            front.classList.remove("live", "spring");
+            front.classList.add("dragging");
             front.setPointerCapture(e.pointerId);
         });
 
         stack.addEventListener("pointermove", function (e) {
-            if (!dragging) return;
-            dx = e.clientX - startX;
             var front = cards[active];
-            front.style.setProperty("--drag-x", dx + "px");
-            front.style.setProperty("--drag-rot", (dx / 20) + "deg");
+            if (!front) return;
+            if (drag) {
+                var t = performance.now(), dt = t - drag.lt;
+                drag.dx = e.clientX - drag.x;
+                if (dt > 0) { drag.vx = (e.clientX - drag.lx) / dt; drag.lx = e.clientX; drag.lt = t; }
+                front.style.setProperty("--dx", drag.dx + "px");
+                front.style.setProperty("--dy", ((e.clientY - drag.y) * 0.3) + "px");
+                front.style.setProperty("--rot", (drag.dx / 16) + "deg");
+                return;
+            }
+            // Not dragging: tilt toward the pointer and catch the light
+            if (REDUCE_MOTION || e.pointerType === "touch" || busy) return;
+            var r = stack.getBoundingClientRect();
+            var px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+            front.classList.add("live");
+            front.style.setProperty("--ry", ((px - .5) * 16).toFixed(2) + "deg");
+            front.style.setProperty("--rx", (-(py - .5) * 11).toFixed(2) + "deg");
+            front.style.setProperty("--gx", (px * 100).toFixed(1) + "%");
+            front.style.setProperty("--gy", (py * 100).toFixed(1) + "%");
+        });
+
+        stack.addEventListener("pointerleave", function () {
+            var front = cards[active];
+            if (drag || !front) return;
+            front.classList.remove("live");
+            front.style.removeProperty("--rx");
+            front.style.removeProperty("--ry");
         });
 
         function endDrag() {
-            if (!dragging) return;
-            dragging = false;
-            var front = cards[active];
-            front.classList.remove("is-dragging");
-            front.style.removeProperty("--drag-x");
-            front.style.removeProperty("--drag-rot");
-            if (Math.abs(dx) > SWIPE_PX) advance(dx < 0 ? -1 : 1);
+            if (!drag) return;
+            var front = cards[active], dx = drag.dx, vx = drag.vx;
+            drag = null;
+            front.classList.remove("dragging");
+            if (Math.abs(dx) > THROW_PX || (Math.abs(vx) > FLICK && Math.abs(dx) > 30)) { advance(dx < 0 ? -1 : 1); return; }
+            // Short drag: spring back
+            front.classList.add("spring");
+            clearVars(front);
+            setTimeout(function () { front.classList.remove("spring"); }, 760);
         }
         stack.addEventListener("pointerup", endDrag);
         stack.addEventListener("pointercancel", endDrag);
 
-        /* Keyboard */
         stack.addEventListener("keydown", function (e) {
             if (e.key === "ArrowRight") { e.preventDefault(); advance(1); }
-            if (e.key === "ArrowLeft")  { e.preventDefault(); advance(-1); }
+            if (e.key === "ArrowLeft")  { e.preventDefault(); goBack(); }
         });
+        next.addEventListener("click", function () { advance(1); });
+        prev.addEventListener("click", goBack);
 
         return {
             reset: function () {
                 clearTimeout(leaveTimer);
                 busy = false;
-                cards = Array.prototype.slice.call(stack.querySelectorAll(".stack-card"));
-                details = Array.prototype.slice.call(document.querySelectorAll(".deck-detail"));
+                drag = null;
+                cards = Array.prototype.slice.call(stack.querySelectorAll(".pcard"));
+                specs = Array.prototype.slice.call(specsBox.querySelectorAll(".spec"));
                 n = cards.length;
-                active = Math.max(0, details.findIndex(function (d) { return "#" + d.id === location.hash; }));
+                // Star and edit redirect back to #project-<id>; reopen that card
+                active = Math.max(0, specs.findIndex(function (s) { return "#" + s.id === location.hash; }));
                 layout();
             }
         };
     })();
     </script>
+
     <script>
-    /* Marquee: each .marquee gets data-rows copies of its one track, every row scrolls right→left. */
-    (function () {
-        var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        var SPEEDS = [1, 0.65, 1.3];
+    /* Teams: each project's builders as a set; whoever is in several sits in the overlap.
+       Up to three sets are drawn at once, a picker chooses which when there are more. */
+    var teamsDiagram = (function () {
+        var svg = document.getElementById("venn");
+        var picker = document.getElementById("team-picker");
+        var summary = document.getElementById("teams-sum");
+        var empty = document.getElementById("teams-empty");
+        var R = 205, AR = 26, MAX_SETS = 3;
+        var projects = [], chosen = [];
+        var WORDS = ["", "one", "two", "three"];
 
-        Array.prototype.slice.call(document.querySelectorAll(".marquee")).forEach(function (marquee) {
-            var first = marquee.querySelector(".marquee-track");
-            if (!first || !first.children.length) return;
-
-            var rows = parseInt(marquee.getAttribute("data-rows") || "1", 10);
-            var base = parseFloat(marquee.getAttribute("data-speed") || "40");
-
-            var tracks = [first];
-            for (var i = 1; i < rows; i++) {
-                var copy = first.cloneNode(true);
-                copy.setAttribute("aria-hidden", "true");
-                marquee.appendChild(copy);
-                tracks.push(copy);
+        // Circle centres and label spots for one, two or three sets
+        function geometry(count) {
+            if (count === 3) {
+                var side = 250, top = 250;
+                return { h: 700, C: [{ x: 500 - side / 2, y: top }, { x: 500 + side / 2, y: top }, { x: 500, y: top + side * Math.sqrt(3) / 2 }] };
             }
+            if (count === 2) return { h: 580, C: [{ x: 375, y: 300 }, { x: 625, y: 300 }] };
+            return { h: 600, C: [{ x: 500, y: 310 }] };
+        }
 
-            if (reduce) return;
+        function labelSpot(c, i, count) {
+            if (count === 3 && i === 2) return { x: c.x - R * 1.12, y: c.y + R * .62, a: "end" };
+            if (i === 1) return { x: c.x + R * .62, y: c.y - R * .86, a: "start" };
+            return { x: c.x - R * .62, y: c.y - R * .86, a: "end" };
+        }
 
-            var states = tracks.map(function (track, i) {
-                var originals = Array.prototype.slice.call(track.children);
-                var count = originals.length;
-                do {
-                    originals.forEach(function (el) {
-                        var c = el.cloneNode(true);
-                        c.setAttribute("aria-hidden", "true");
-                        Array.prototype.slice.call(c.querySelectorAll("a")).forEach(function (a) { a.tabIndex = -1; });
-                        track.appendChild(c);
-                    });
-                } while (track.offsetWidth < marquee.clientWidth * 2);
+        // Where a region's people gather, and how many fit before the rest fold into "+N"
+        function region(key, g) {
+            var ks = key.split("+").map(Number), count = g.C.length;
+            var G = g.C.reduce(function (a, c) { return { x: a.x + c.x / count, y: a.y + c.y / count }; }, { x: 0, y: 0 });
+            if (count === 1) return { at: G, cols: 5, max: 15 };
+            if (ks.length === count) return { at: G, cols: count === 2 ? 1 : 2, max: count === 2 ? 3 : 2 };
+            if (ks.length === 1) {
+                var c = g.C[ks[0]], dx = c.x - G.x, dy = c.y - G.y, d = Math.hypot(dx, dy), k = R * (count === 2 ? .45 : .42);
+                return { at: { x: c.x + dx / d * k, y: c.y + dy / d * k }, cols: count === 2 ? 2 : 3, max: 6 };
+            }
+            // A pair inside three sets: mirror the pair's midpoint through the centre, then line up outward
+            var a = g.C[ks[0]], b = g.C[ks[1]];
+            var at = { x: G.x + ((a.x + b.x) / 2 - G.x) * 2, y: G.y + ((a.y + b.y) / 2 - G.y) * 2 };
+            var ox = at.x - G.x, oy = at.y - G.y, od = Math.hypot(ox, oy);
+            return { at: at, dir: { x: ox / od, y: oy / od }, max: 2 };
+        }
 
-                var cycle = track.children[count].offsetLeft - track.children[0].offsetLeft;
-                var state = {
-                    track: track,
-                    cycle: cycle,
-                    speed: base * SPEEDS[i % SPEEDS.length],
-                    x: -cycle * (i / rows),
-                    paused: false
-                };
-                track.addEventListener("mouseenter", function () { state.paused = true; });
-                track.addEventListener("mouseleave", function () { state.paused = false; });
-                track.addEventListener("focusin",  function () { state.paused = true; });
-                track.addEventListener("focusout", function () { state.paused = false; });
-                return state;
+        function slots(reg, count) {
+            if (reg.dir) {
+                return Array.from({ length: count }, function (_, i) {
+                    var t = (i - (count - 1) / 2) * 86;
+                    return { x: reg.at.x + reg.dir.x * t, y: reg.at.y + reg.dir.y * t - 8 };
+                });
+            }
+            var rows = Math.ceil(count / reg.cols);
+            return Array.from({ length: count }, function (_, i) {
+                var row = Math.floor(i / reg.cols), inRow = Math.min(reg.cols, count - row * reg.cols), col = i % reg.cols;
+                return { x: reg.at.x + (col - (inRow - 1) / 2) * 72, y: reg.at.y - 8 + (row - (rows - 1) / 2) * 86 };
+            });
+        }
+
+        function personSvg(person, x, y, uid) {
+            var face = person.icon
+                ? '<clipPath id="vc-' + uid + '"><circle cx="' + x + '" cy="' + y + '" r="' + AR + '"/></clipPath>' +
+                  '<image href="' + escapeHtml(person.icon) + '" x="' + (x - AR) + '" y="' + (y - AR) + '" width="' + (2 * AR) + '" height="' + (2 * AR) + '" clip-path="url(#vc-' + uid + ')" preserveAspectRatio="xMidYMid slice"/>'
+                : '<circle class="disc" cx="' + x + '" cy="' + y + '" r="' + AR + '"/><text class="ini" x="' + x + '" y="' + (y + 6) + '" text-anchor="middle">' + escapeHtml(person.name.charAt(0).toUpperCase()) + '</text>';
+            return '<g class="person" data-p="' + person.pk + '" data-sets="' + person.sets.join(" ") + '" tabindex="0">' +
+                (person.more ? '<title>' + escapeHtml(person.more) + '</title>' : '') + face +
+                '<circle class="ring" cx="' + x + '" cy="' + y + '" r="' + AR + '"/>' +
+                '<text class="pname" x="' + x + '" y="' + (y + AR + 18) + '" text-anchor="middle">' + escapeHtml(person.name) + '</text></g>';
+        }
+
+        function draw() {
+            var sets = projects.filter(function (p) { return chosen.indexOf(p.pk) >= 0; });
+            var hasSets = sets.length > 0;
+            svg.classList.toggle("hide", !hasSets);
+            empty.classList.toggle("hide", hasSets);
+            if (!hasSets) { summary.textContent = ""; svg.innerHTML = ""; return; }
+
+            var g = geometry(sets.length);
+            svg.setAttribute("viewBox", "0 0 1000 " + g.h);
+
+            // Which of the drawn sets each person belongs to
+            var people = {};
+            sets.forEach(function (p, i) {
+                p.fields.peers.forEach(function (peer) {
+                    var person = people[peer.pk] = people[peer.pk] || { pk: peer.pk, name: peer.name, icon: peer.icon_url, sets: [] };
+                    person.sets.push(i);
+                });
+            });
+            var regions = {};
+            Object.keys(people).forEach(function (pk) {
+                var key = people[pk].sets.join("+");
+                (regions[key] = regions[key] || []).push(people[pk]);
             });
 
-            var last = performance.now();
-            function tick(now) {
-                var dt = Math.min((now - last) / 1000, 0.1);
-                last = now;
-                states.forEach(function (s) {
-                    if (!s.paused) {
-                        s.x -= s.speed * dt;
-                        if (s.x <= -s.cycle) s.x += s.cycle;
-                    }
-                    s.track.style.transform = "translateX(" + s.x + "px)";
-                });
-                requestAnimationFrame(tick);
+            var out = "";
+            sets.forEach(function (p, i) {
+                out += '<circle class="set" data-j="' + i + '" cx="' + g.C[i].x + '" cy="' + g.C[i].y + '" r="' + R + '"/>';
+            });
+            sets.forEach(function (p, i) {
+                var l = labelSpot(g.C[i], i, sets.length);
+                out += '<g class="slabel" data-j="' + i + '"><text class="sname" x="' + l.x + '" y="' + l.y + '" text-anchor="' + l.a + '">' + escapeHtml(p.fields.title) + '</text>' +
+                    '<text class="smeta" x="' + l.x + '" y="' + (l.y + 20) + '" text-anchor="' + l.a + '">' + escapeHtml(p.fields.year) + ' · ' + escapeHtml(p.fields.team_label) + '</text></g>';
+            });
+
+            // Every region of the diagram, so empty overlaps can be marked ∅
+            var keys = [];
+            for (var mask = 1; mask < (1 << sets.length); mask++) {
+                keys.push(sets.map(function (_, i) { return i; }).filter(function (i) { return mask & (1 << i); }).join("+"));
             }
-            requestAnimationFrame(tick);
+            var uid = 0;
+            keys.forEach(function (key) {
+                var reg = region(key, g), members = regions[key] || [];
+                if (!members.length) {
+                    if (sets.length > 1) out += '<text class="empty" x="' + reg.at.x + '" y="' + (reg.at.y + 5) + '" text-anchor="middle">∅</text>';
+                    return;
+                }
+                var shown = members;
+                if (members.length > reg.max) {
+                    var rest = members.slice(reg.max - 1);
+                    shown = members.slice(0, reg.max - 1).concat([{
+                        pk: "more-" + key, name: "+" + rest.length + " more", icon: "", sets: rest[0].sets,
+                        more: rest.map(function (m) { return m.name; }).join(", ")
+                    }]);
+                }
+                slots(reg, shown.length).forEach(function (spot, i) { out += personSvg(shown[i], spot.x, spot.y, uid++); });
+            });
+            svg.innerHTML = out;
+
+            // Headline: who sits in the most teams
+            var shared = Object.keys(people).map(function (pk) { return people[pk]; })
+                .filter(function (p) { return p.sets.length > 1; })
+                .sort(function (a, b) { return b.sets.length - a.sets.length; });
+            var bits = [sets.length + (sets.length === 1 ? " team" : " teams")];
+            shared.slice(0, 2).forEach(function (p) {
+                var all = p.sets.length === sets.length;
+                bits.push(p.name.toLowerCase() + " in " + (all && sets.length > 2 ? "all " : "") + (WORDS[p.sets.length] || p.sets.length));
+            });
+            if (sets.length > 1 && !shared.length) bits.push("no overlap");
+            summary.textContent = bits.join(" · ");
+            svg.setAttribute("aria-label", sets.map(function (p) {
+                return p.fields.title + ": " + p.fields.peers.map(function (peer) { return peer.name; }).join(", ");
+            }).join(". "));
+
+            bindFocus();
+        }
+
+        function focus(setIdx, who) {
+            svg.classList.toggle("focus", !!setIdx);
+            Array.prototype.forEach.call(svg.querySelectorAll(".set, .slabel"), function (el) {
+                el.classList.toggle("hot", !!setIdx && setIdx.indexOf(el.getAttribute("data-j")) >= 0);
+            });
+            Array.prototype.forEach.call(svg.querySelectorAll(".person"), function (el) {
+                var mine = el.getAttribute("data-sets").split(" ");
+                el.classList.toggle("hot", !!setIdx && (who ? el.getAttribute("data-p") === who : mine.indexOf(setIdx[0]) >= 0));
+            });
+        }
+
+        function bindFocus() {
+            Array.prototype.forEach.call(svg.querySelectorAll(".set, .slabel"), function (el) {
+                el.addEventListener("pointerenter", function () { focus([el.getAttribute("data-j")], null); });
+                el.addEventListener("pointerleave", function () { focus(null, null); });
+            });
+            Array.prototype.forEach.call(svg.querySelectorAll(".person"), function (el) {
+                var on = function () { focus(el.getAttribute("data-sets").split(" "), el.getAttribute("data-p")); };
+                var off = function () { focus(null, null); };
+                el.addEventListener("pointerenter", on); el.addEventListener("focus", on);
+                el.addEventListener("pointerleave", off); el.addEventListener("blur", off);
+            });
+        }
+
+        function renderPicker() {
+            picker.hidden = projects.length <= MAX_SETS;
+            picker.innerHTML = projects.map(function (p) {
+                return '<button type="button" data-pk="' + p.pk + '" aria-pressed="' + (chosen.indexOf(p.pk) >= 0) + '">' +
+                    escapeHtml(p.fields.title) + ' · ' + escapeHtml(p.fields.year) + '</button>';
+            }).join("");
+        }
+
+        picker.addEventListener("click", function (e) {
+            var btn = e.target.closest("button[data-pk]");
+            if (!btn) return;
+            var pk = btn.getAttribute("data-pk"), at = chosen.indexOf(pk);
+            if (at >= 0) { if (chosen.length > 1) chosen.splice(at, 1); }
+            else { chosen.push(pk); if (chosen.length > MAX_SETS) chosen.shift(); }   // the oldest pick makes room
+            renderPicker();
+            draw();
         });
+
+        return {
+            render: function (data) {
+                var known = projects.map(function (p) { return p.pk; });
+                projects = data;
+                var pks = data.map(function (p) { return p.pk; });
+                chosen = chosen.filter(function (pk) { return pks.indexOf(pk) >= 0; });
+                if (known.length) {
+                    // A project added since the last draw goes straight into the diagram
+                    pks.filter(function (pk) { return known.indexOf(pk) < 0; }).forEach(function (pk) {
+                        chosen.push(pk);
+                        if (chosen.length > MAX_SETS) chosen.shift();
+                    });
+                }
+                if (!chosen.length) chosen = pks.slice(0, MAX_SETS);
+                renderPicker();
+                draw();
+            }
+        };
     })();
     </script>
 
@@ -328,8 +551,9 @@
     const errorState = document.getElementById('error');
     const emptyState = document.getElementById('empty');
     const gridContainer = document.getElementById('grid');
-    const stackContainer = gridContainer.querySelector('.deck-stack');
-    const detailsContainer = gridContainer.querySelector('.deck-details');
+    const stackContainer = gridContainer.querySelector('.stack');
+    const specsContainer = gridContainer.querySelector('.specs');
+    const projectCount = document.getElementById('project-count');
     const searchForm = document.getElementById('project-search-form');
     const searchInput = document.getElementById('search-input');
 
@@ -341,115 +565,131 @@
         gridContainer.classList.toggle('hide', !showGrid);
     }
 
-    // JSON values go into innerHTML, so escape them first
-    function escapeHtml(value) {
-        const div = document.createElement('div');
-        div.textContent = value ?? '';
-        return div.innerHTML.replace(/"/g, '&quot;');
-    }
-
     // Build the screenshot card that sits in the stack
-    function buildProjectCardElement(item) {
+    function buildProjectCardElement(item, index, total) {
         const project = item.fields;
-
         const articleElement = document.createElement('article');
-        articleElement.className = 'stack-card';
+        articleElement.className = 'pcard';
 
         const imageHtml = project.project_image_url
-            ? `<img class="stack-card-img" src="${escapeHtml(project.project_image_url)}" alt="Screenshot of ${escapeHtml(project.title)}" draggable="false">`
-            : '';
-
-        const liveHtml = project.live_url
-            ? `<a class="social-link" href="${escapeHtml(project.live_url)}" target="_blank" rel="noopener">Website</a>`
-            : '';
-        const repoHtml = project.repo_url
-            ? `<a class="social-link" href="${escapeHtml(project.repo_url)}" target="_blank" rel="noopener">Github</a>`
+            ? `<img src="${escapeHtml(project.project_image_url)}" alt="Screenshot of ${escapeHtml(project.title)}" draggable="false">`
             : '';
 
         articleElement.innerHTML = `
-            <span class="stack-card-year">${escapeHtml(project.year)}</span>
-            <div class="stack-card-shot">${imageHtml}</div>
-            <div class="stack-card-foot">
-                <span class="stack-card-tech">${escapeHtml(project.tech_list.join(' + '))}</span>
-                ${liveHtml}
-                ${repoHtml}
+            <div class="top">
+                <span class="no">${pad2(index + 1)} / ${pad2(total)}</span>
+                <span class="yr">${escapeHtml(project.year)}</span>
             </div>
+            <div class="shot">${imageHtml}</div>
+            <div class="foot">
+                <span>${escapeHtml(project.tech_list.join(' + ') || 'N/A')}</span>
+                <span class="mono">${escapeHtml(host(project.live_url || project.repo_url))}</span>
+            </div>
+            <span class="glare"></span>
         `;
         return articleElement;
     }
 
-    // Build the title / description / actions block shown under the front card
-    function buildProjectDetailElement(item, index, total) {
+    // Build the title / facts / actions block shown beside the front card
+    function buildProjectSpecElement(item, index) {
         const project = item.fields;
         const projectId = item.pk;
+        const { lead, body } = splitDescription(project.description);
 
         const articleElement = document.createElement('article');
-        articleElement.className = 'deck-detail';
+        articleElement.className = 'spec';
         articleElement.id = `project-${projectId}`;
 
         const starUrl = "{% url 'main:toggle_star' '00000000-0000-0000-0000-000000000000' %}".replace(DUMMY_ID, projectId);
         const editUrl = "{% url 'main:update_project' '00000000-0000-0000-0000-000000000000' %}".replace(DUMMY_ID, projectId);
         const deleteUrl = "{% url 'main:delete_project' '00000000-0000-0000-0000-000000000000' %}".replace(DUMMY_ID, projectId);
 
-        const peersHtml = project.peers.length
-            ? `<div class="peer-row">
-                ${project.peers.map(peer => `
-                    <span class="peer-item" tabindex="0">
-                        <img class="peer" src="${escapeHtml(peer.icon_url)}" alt="${escapeHtml(peer.name)}">
-                        <span class="peer-name">${escapeHtml(peer.name)}</span>
-                    </span>`).join('')}
-            </div>`
-            : '';
-
         const starHtml = IS_AUTHENTICATED
-            ? `<form method="post" action="${starUrl}" class="star-form">
+            ? `<form method="post" action="${starUrl}">
                 {% csrf_token %}
                 <button type="submit"
-                        class="star${project.is_starred ? ' is-starred' : ''}"
+                        class="btn pstar${project.is_starred ? ' on' : ''}"
                         aria-pressed="${project.is_starred}"
                         title="${project.star_count > 0 ? `Starred by ${escapeHtml(project.starred_by_names)}` : 'Be the first to star'}">
-                    <span class="star-icon" aria-hidden="true">★</span>
-                    ${project.is_starred ? 'Starred' : 'Star'}
-                    <span class="star-count">${project.star_count}</span>
+                    ${STAR_SVG}${project.is_starred ? 'starred' : 'star'}
+                    <span class="cnt">${project.star_count}</span>
                 </button>
             </form>`
-            : `<a class="star" href="${LOGIN_URL}">
-                <span class="star-icon" aria-hidden="true">★</span>
-                Log in to star
-                <span class="star-count">${project.star_count}</span>
+            : `<a class="btn pstar" href="${LOGIN_URL}">
+                ${STAR_SVG}log in to star
+                <span class="cnt">${project.star_count}</span>
             </a>`;
 
-        const editHtml = CAN_EDIT
-            ? `<a class="social-link" href="${editUrl}">Edit</a>`
-            : '';
+        const liveHtml = project.live_url
+            ? `<a class="btn" href="${escapeHtml(project.live_url)}" target="_blank" rel="noopener">website ↗</a>` : '';
+        const repoHtml = project.repo_url
+            ? `<a class="btn" href="${escapeHtml(project.repo_url)}" target="_blank" rel="noopener">repository ↗</a>` : '';
+        const editHtml = CAN_EDIT ? `<a class="btn btn-ghost" href="${editUrl}">edit</a>` : '';
 
         const deleteHtml = CAN_DELETE
-            ? `<button type="button" class="social-link is-danger" popovertarget="confirm-${projectId}">Delete</button>
+            ? `<button type="button" class="btn btn-ghost is-danger" popovertarget="confirm-${projectId}">delete</button>
             <div id="confirm-${projectId}" class="confirm" popover role="dialog" aria-labelledby="confirm-title-${projectId}">
                 <h3 id="confirm-title-${projectId}">Delete this project?</h3>
-                <p><strong>${escapeHtml(project.title)}</strong> will be removed from your portfolio. Its collaborators stay in Peers.</p>
+                <p><strong>${escapeHtml(project.title)}</strong> will be removed from your portfolio. Its collaborators stay in Teams.</p>
                 <div class="confirm-actions">
-                    <button type="button" class="social-link" popovertarget="confirm-${projectId}" popovertargetaction="hide">Keep it</button>
+                    <button type="button" class="btn btn-ghost" popovertarget="confirm-${projectId}" popovertargetaction="hide">keep it</button>
                     <form method="post" action="${deleteUrl}">
                         {% csrf_token %}
-                        <button type="submit" class="social-link is-danger">Yes, delete</button>
+                        <button type="submit" class="btn is-danger">yes, delete</button>
                     </form>
                 </div>
             </div>`
             : '';
 
+        const teamHtml = project.peers.length
+            ? `<div class="team">
+                <p class="lbl">built by</p>
+                ${project.peers.map(peer => `
+                    <span class="mate">
+                        ${peer.icon_url
+                            ? `<img src="${escapeHtml(peer.icon_url)}" alt="">`
+                            : `<span class="initial" aria-hidden="true">${escapeHtml(peer.name.charAt(0).toUpperCase())}</span>`}
+                        ${escapeHtml(peer.name)}
+                    </span>`).join('')}
+            </div>`
+            : '';
+
         articleElement.innerHTML = `
-            <p class="deck-count">${index + 1} / ${total}</p>
-            <h2 class="deck-title">${escapeHtml(project.title)}</h2>
-            <p class="deck-description">${escapeHtml(project.description).replace(/\r?\n/g, '<br>')}</p>
-            ${peersHtml}
-            <div class="deck-actions">
+            <p class="lbl">${pad2(index + 1)} · ${escapeHtml(project.year)}</p>
+            <h2 class="pt">${escapeHtml(project.title)}</h2>
+            <p class="plead">${escapeHtml(lead)}</p>
+            <dl class="specdl">
+                <div><dt class="lbl">role</dt><dd>${escapeHtml(project.role || '—')}</dd></div>
+                <div><dt class="lbl">team</dt><dd>${escapeHtml(project.team_label)}</dd></div>
+                <div><dt class="lbl">stack</dt><dd>${escapeHtml(project.tech_list.join(', ') || 'N/A')}</dd></div>
+                <div><dt class="lbl">context</dt><dd>${escapeHtml(project.context || '—')}</dd></div>
+            </dl>
+            ${body ? `<p class="pbody">${escapeHtml(body).replace(/\n/g, '<br>')}</p>` : ''}
+            <div class="pact">
                 ${starHtml}
+                ${liveHtml}
+                ${repoHtml}
                 ${editHtml}
                 ${deleteHtml}
             </div>
+            ${teamHtml}
         `;
         return articleElement;
+    }
+
+    // Teams always show every project, whatever the search box says
+    function renderTeams(projectData) {
+        teamsDiagram.render(projectData);
+        syncTeamChoices(projectData);
+    }
+
+    async function fetchTeams() {
+        try {
+            const response = await fetch(BASE_PROJECTS_ENDPOINT, { headers: { 'Accept': 'application/json' } });
+            if (response.ok) renderTeams(await response.json());
+        } catch (error) {
+            console.error('Error loading teams:', error);
+        }
     }
 
     // Fetch project data
@@ -470,15 +710,19 @@
             if (!response.ok) throw new Error('Failed to fetch data');
 
             const projectData = await response.json();
+            projectCount.textContent = pad2(projectData.length);
+
+            if (searchQuery) fetchTeams();
+            else renderTeams(projectData);
 
             if (projectData.length === 0) {
                 displayPageSection({ showEmpty: true });
             } else {
                 stackContainer.innerHTML = '';
-                detailsContainer.innerHTML = '';
+                specsContainer.innerHTML = '';
                 projectData.forEach((item, index) => {
-                    stackContainer.appendChild(buildProjectCardElement(item));
-                    detailsContainer.appendChild(buildProjectDetailElement(item, index, projectData.length));
+                    stackContainer.appendChild(buildProjectCardElement(item, index, projectData.length));
+                    specsContainer.appendChild(buildProjectSpecElement(item, index));
                 });
                 projectDeck.reset();
                 displayPageSection({ showGrid: true });
@@ -496,69 +740,65 @@
         fetchProjects(searchInput.value.trim()); // Run the search via AJAX
     });
 
-    function closeProjectModal() {
-        document.getElementById("add-project-modal").hidePopover();
-    }
-    // Send the form data with the fetch API
-        const CREATE_PROJECT_ENDPOINT = "{% url 'main:create_project_ajax' %}";
-    const projectForm = document.getElementById('project-form');
-
-    // Read a cookie value, used to get the CSRF token
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
+    // Post a modal form with fetch; on success close it and redraw the deck and Teams
+    function ajaxModalForm(formId, modalId, endpoint, successTitle, onSuccess) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                    body: new FormData(form),
+                });
+                const result = await response.json().catch(() => ({}));
+                if (response.ok) {
+                    form.reset();
+                    document.getElementById(modalId).hidePopover();
+                    showToast(successTitle, result.message || 'Saved.', 'success');
+                    if (onSuccess) onSuccess(result);
+                    fetchProjects(searchInput.value.trim());
+                } else {
+                    showToast('Not saved', errorText(result, response.status), 'error');
                 }
+            } catch (error) {
+                console.error(`Error submitting ${formId}:`, error);
+                showToast('Not saved', 'Could not reach the server. Please try again.', 'error');
+            } finally {
+                submitButton.disabled = false;
             }
-        }
-        return cookieValue;
+        });
     }
 
-    // Send the form data to the server
-    async function addProject(event) {
-        event.preventDefault();
+    ajaxModalForm('project-form', 'add-project-modal', "{% url 'main:create_project_ajax' %}", 'Project added');
+    ajaxModalForm('teammate-form', 'add-teammate-modal', "{% url 'main:add_teammate' %}", 'Teammate added');
 
-        const submitButton = projectForm.querySelector('button[type="submit"]');
-        submitButton.disabled = true;
-
-        try {
-            const response = await fetch(CREATE_PROJECT_ENDPOINT, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCookie('csrftoken') },
-                body: new FormData(projectForm),
-            });
-            const result = await response.json().catch(() => ({}));
-
-            if (response.ok) {
-                projectForm.reset();
-                closeProjectModal();
-                showToast('Success', 'New project added successfully!', 'success');
-                fetchProjects(searchInput.value.trim());
-            } else {
-                const errorMessages = result.errors
-                    ? Object.values(result.errors).flat().map(error => error.message)
-                    : [result.message || `Something went wrong (status ${response.status}).`];
-                showToast('Failed to add project', errorMessages.join(' '), 'error');
-            }
-        } catch (error) {
-            console.error('Error adding project:', error);
-            showToast('Failed to add project', 'Could not reach the server. Please try again.', 'error');
-        } finally {
-            submitButton.disabled = false;
+    // Keep both modals' chips in step with the data: teams to join, and builders to pick
+    function syncTeamChoices(projectData) {
+        const teamBox = document.getElementById('teammate-teams');
+        if (teamBox) {
+            const ticked = Array.from(teamBox.querySelectorAll('input:checked')).map(input => input.value);
+            teamBox.innerHTML = projectData.map(item => `
+                <input type="checkbox" id="tm-${item.pk}" name="projects" value="${item.pk}"${ticked.includes(item.pk) ? ' checked' : ''}>
+                <label for="tm-${item.pk}">${escapeHtml(item.fields.title)}</label>`).join('');
         }
-    }
-
-    if (projectForm) {
-        projectForm.addEventListener('submit', addProject);
+        const builderBox = document.getElementById('builder-tags');
+        if (builderBox) {
+            projectData.forEach(item => item.fields.peers.forEach(peer => {
+                if (builderBox.querySelector(`input[value="${peer.pk}"]`)) return;
+                builderBox.insertAdjacentHTML('beforeend', `
+                    <input type="checkbox" id="id_peers_${peer.pk}" name="peers" value="${peer.pk}">
+                    <label for="id_peers_${peer.pk}">${escapeHtml(peer.name)}</label>`);
+            }));
+        }
     }
 
     // Start the application
     fetchProjects(searchInput.value.trim());
     </script>
+
 
 {% endblock content %}
