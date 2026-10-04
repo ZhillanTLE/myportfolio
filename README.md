@@ -18,8 +18,11 @@ pip install -r requirements.txt
 python manage.py runserver
 ```
 
-### Reflection
-    
+### Reflection 5
+1. Debouncing lets the website load for rapid user actions. User makes network requests to a server to fetch or send data without reloading the page. Without debouncing, rapid user actions can cause major performance and cost issues.
+2. Pause code execution until the network request finishes and returns its data.
+3. XSS generally occurs when an application takes user input (like a comment or search query) and displays it back on the page without properly cleaning or escaping the code which would allow attackers to steal session cookies, hijack user accounts, log keystrokes, or redirect users to malicious sites.
+
 A full reflection record in [docs/reflection-weekly.md](docs/reflection-weekly.md) 
 
 #### Reflecting on AI Usage
