@@ -2,12 +2,12 @@
    Everything is scoped under .zr so the rest of the site keeps style.css as is. */
 
 .zr {
-    --paper: #0a0a0a;
+    --paper: #121212;
     --ink: #eceef1;
     --mute: #8a919b;
     --faint: #454b54;
     --line: #22262d;
-    --raise: #111317;
+    --raise: #1a1a1b;
     --blue: #5583c8;
     --cyan: #00aaff;
     --gold: #e3b341;
@@ -78,7 +78,7 @@
     padding: .75rem 1.15rem;
     border: 1px solid var(--faint);
     border-radius: 6px;
-    background: #141414;
+    background: #191919;
     color: var(--ink);
     text-decoration: none;
     font-size: .8rem;
@@ -230,7 +230,7 @@
 .zr .pstar { font-size: .8rem; }
 .zr .pstar svg { width: 15px; height: 15px; flex-shrink: 0; overflow: visible; }
 .zr .pstar svg path { fill: transparent; stroke: var(--mute); stroke-width: 1.6; stroke-linejoin: round; transition: fill .25s ease, stroke .25s ease; }
-.zr .pstar:hover { background: #1b1b1b; color: var(--ink); border-color: var(--mute); }
+.zr .pstar:hover { background: #222; color: var(--ink); border-color: var(--mute); }
 .zr .pstar:hover svg path { stroke: var(--gold); }
 .zr .pstar.on { border-color: var(--gold); }
 .zr .pstar.on svg path { fill: var(--gold); stroke: var(--gold); }
