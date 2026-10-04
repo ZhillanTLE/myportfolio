@@ -17,6 +17,7 @@ from main.views import (
     get_experiences_json,
     create_experience_ajax,
     toggle_experience_star,
+    get_github_contributions,
 )
 app_name = 'main'
 
@@ -38,4 +39,5 @@ urlpatterns = [
     path("api/experiences/", get_experiences_json, name="get_experiences_json"),
     path("experiences/add-ajax/", create_experience_ajax, name="create_experience_ajax"),
     path("experiences/<uuid:experience_id>/star/", toggle_experience_star, name="toggle_experience_star"),
+    path("api/github/contributions/", get_github_contributions, name="get_github_contributions"),
 ]

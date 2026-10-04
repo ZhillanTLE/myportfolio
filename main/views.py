@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from main.models import Experience, Project, Peer
+from main import github
 from main.forms import ExperienceForm, ProjectForm, PeerForm, TeammateForm, find_or_create_collaborator
 
 
@@ -367,3 +368,11 @@ def toggle_experience_star(request, experience_id):
         is_starred = True
 
     return JsonResponse({"is_starred": is_starred, "star_count": experience.starred_by.count()})
+
+
+# Footer: GitHub contribution calendar, fetched by the page so a slow GitHub never holds up a render
+def get_github_contributions(request):
+    calendar = github.get_contributions()
+    if calendar is None:
+        return JsonResponse({"message": "GitHub contributions are unavailable right now."}, status=503)
+    return JsonResponse({**calendar, "username": github.USERNAME, "profile_url": github.PROFILE_URL})
