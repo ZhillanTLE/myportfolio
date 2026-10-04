@@ -288,8 +288,9 @@
 
     <script>
     /* Teams: each project's builders as a set; whoever is in several sits in the overlap.
-       One to three sets are circles; four and five are ellipses, since circles can't show every
-       overlap past three. Up to five sets are drawn at once, a picker chooses which when there are more. */
+       One to three sets are an overlapping Venn. Four and five are a hub instead: a Venn that size is
+       mostly empty regions, so each project gets its own circle and shared people sit between them,
+       linked to every team they're on. Up to five sets are drawn at once, a picker chooses which when there are more. */
     var teamsDiagram = (function () {
         var svg = document.getElementById("venn");
         var picker = document.getElementById("team-picker");
@@ -297,17 +298,12 @@
         var R = 205, AR = 26, MAX_SETS = 5;
         var projects = [], chosen = [];
 
-        /* Ellipse layouts in unit space, centred on 0,0, found by searching for the shapes whose
-           smallest region is largest: Venn's four-ellipse figure, and Grünbaum's symmetric five. */
-        var ELLIPSES = {
-            4: (function () {
-                var u = .256, v = .26, q = Math.PI / 4;
-                return { scale: 300, ar: 20, tip: "up", E: [[-u, v, q], [-u / 3, -v, q], [u / 3, -v, -q], [u, v, -q]]
-                    .map(function (e) { return { x: e[0], y: e[1], a: 1.28, b: .57, r: e[2] }; }) };
-            })(),
-            5: { scale: 290, ar: 15, tip: "far", E: [0, 1, 2, 3, 4].map(function (i) {
+        // Hub layouts: project circle centres around a ring, circle and avatar size, viewBox height
+        var HUB = {
+            4: { h: 800, r: 132, ar: 22, rows: 3, C: [{ x: 230, y: 230 }, { x: 770, y: 230 }, { x: 770, y: 590 }, { x: 230, y: 590 }] },
+            5: { h: 910, r: 112, ar: 20, rows: 2, C: [0, 1, 2, 3, 4].map(function (i) {
                 var t = -Math.PI / 2 + i * 2 * Math.PI / 5;
-                return { x: .2 * Math.cos(t), y: .2 * Math.sin(t), a: 1.062, b: .681, r: t + .409 };
+                return { x: Math.round(500 + 300 * Math.cos(t)), y: Math.round(480 + 300 * Math.sin(t)) };
             }) }
         };
 
@@ -344,64 +340,89 @@
             return { at: at, dir: { x: ox / od, y: oy / od }, max: 2 };
         }
 
-        // Four or five sets: ellipses in px, a clear spot inside every region, and label spots
-        function ellipseGeometry(count) {
-            var layout = ELLIPSES[count], s = layout.scale;
-            var E = layout.E.map(function (e) { return { x: e.x * s, y: e.y * s, a: e.a * s, b: e.b * s, r: e.r }; });
-
-            // Sample the figure; per region keep the point furthest from any edge
-            var best = {}, ext = 1.3 * s, step = 5;
-            for (var x = -ext; x <= ext; x += step) {
-                for (var y = -ext; y <= ext; y += step) {
-                    var mask = 0, depth = Infinity;
-                    E.forEach(function (e, k) {
-                        var dx = x - e.x, dy = y - e.y, co = Math.cos(e.r), si = Math.sin(e.r);
-                        var u = dx * co + dy * si, v = -dx * si + dy * co;
-                        var q = Math.sqrt(u * u / (e.a * e.a) + v * v / (e.b * e.b));
-                        if (q <= 1) mask |= 1 << k;
-                        depth = Math.min(depth, q ? Math.hypot(dx, dy) * Math.abs(1 - 1 / q) : e.b);
+        // Shared people start at the middle of their projects, then are nudged apart and kept clear of every circle
+        function hubSpots(groups, hub) {
+            var ar = hub.ar, gap = 2 * ar + 46, clear = hub.r + ar + 14;
+            var cx = 500, cy = hub.C.reduce(function (a, c) { return a + c.y; }, 0) / hub.C.length;
+            var spots = [];
+            groups.forEach(function (group) {
+                var mid = group.sets.reduce(function (a, k) {
+                    return { x: a.x + hub.C[k].x / group.sets.length, y: a.y + hub.C[k].y / group.sets.length };
+                }, { x: 0, y: 0 });
+                slots({ at: mid, cols: 3 }, group.members.length, ar).forEach(function (spot, i) {
+                    spots.push({ x: spot.x, y: spot.y, person: group.members[i] });
+                });
+            });
+            for (var step = 0; step < 80; step++) {
+                spots.forEach(function (a, i) {
+                    spots.forEach(function (b, j) {
+                        if (j <= i) return;
+                        var dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+                        if (d >= gap) return;
+                        if (d < .01) { dx = j - i; dy = 0; d = Math.abs(dx); }   // same spot: split sideways
+                        var push = (gap - d) / 2;
+                        a.x -= dx / d * push; a.y -= dy / d * push;
+                        b.x += dx / d * push; b.y += dy / d * push;
                     });
-                    if (mask && (!best[mask] || depth > best[mask].depth)) best[mask] = { x: x, y: y, depth: depth };
-                }
+                    hub.C.forEach(function (c) {
+                        var dx = a.x - c.x, dy = a.y - c.y, d = Math.hypot(dx, dy);
+                        if (d >= clear) return;
+                        if (d < .01) { dx = cx - c.x; dy = cy - c.y; d = Math.hypot(dx, dy); }
+                        a.x = c.x + dx / d * clear; a.y = c.y + dy / d * clear;
+                    });
+                    a.x = Math.min(1000 - ar - 30, Math.max(ar + 30, a.x));
+                    a.y = Math.min(hub.h - ar - 40, Math.max(ar + 10, a.y));
+                });
             }
-
-            // Each label sits past one end of its ellipse's long axis
-            var labels = E.map(function (e) {
-                var ex = Math.cos(e.r) * e.a, ey = Math.sin(e.r) * e.a;
-                var plus = { x: e.x + ex, y: e.y + ey }, minus = { x: e.x - ex, y: e.y - ey };
-                var tip = layout.tip === "up"
-                    ? (plus.y < minus.y ? plus : minus)
-                    : (Math.hypot(plus.x, plus.y) > Math.hypot(minus.x, minus.y) ? plus : minus);
-                var d = Math.hypot(tip.x, tip.y) || 1;
-                var spot = { x: tip.x + tip.x / d * 22, y: tip.y + tip.y / d * 22 + (tip.y > 0 ? 18 : 0) };
-                spot.a = spot.x < -40 ? "end" : spot.x > 40 ? "start" : "middle";
-                return spot;
-            });
-
-            var box = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
-            function grow(x0, y0, x1, y1) {
-                box.x0 = Math.min(box.x0, x0); box.y0 = Math.min(box.y0, y0);
-                box.x1 = Math.max(box.x1, x1); box.y1 = Math.max(box.y1, y1);
-            }
-            E.forEach(function (e) {
-                var hw = Math.hypot(e.a * Math.cos(e.r), e.b * Math.sin(e.r)), hh = Math.hypot(e.a * Math.sin(e.r), e.b * Math.cos(e.r));
-                grow(e.x - hw, e.y - hh, e.x + hw, e.y + hh);
-            });
-            return { E: E, best: best, labels: labels, ar: layout.ar, box: box, grow: grow };
+            return spots;
         }
 
-        // Where a region's people gather in the ellipse figure, and how many fit around that spot
-        function ellipseRegion(key, g) {
-            var mask = key.split("+").reduce(function (m, k) { return m | (1 << Number(k)); }, 0);
-            var spot = g.best[mask] || { x: 0, y: 0, depth: 0 };
-            var dx = 2 * g.ar + 20, dy = 2 * g.ar + 34, room = 2 * spot.depth - 2 * g.ar;
-            var cols = Math.max(1, Math.min(3, Math.floor(room / dx) + 1));
-            var rows = Math.max(1, Math.min(3, Math.floor((room - 18) / dy) + 1));
-            return { at: { x: spot.x, y: spot.y }, cols: cols, max: cols * rows };
+        function hubSvg(sets, people, regions) {
+            var hub = HUB[sets.length], ar = hub.ar, out = "", uid = 0;
+            var cy = hub.C.reduce(function (a, c) { return a + c.y; }, 0) / hub.C.length;
+
+            sets.forEach(function (p, i) {
+                var c = hub.C[i], above = c.y < cy, y = above ? c.y - hub.r - 38 : c.y + hub.r + 36;
+                out += '<circle class="set" data-j="' + i + '" cx="' + c.x + '" cy="' + c.y + '" r="' + hub.r + '"/>';
+                out += '<g class="slabel" data-j="' + i + '"><text class="sname" x="' + c.x + '" y="' + y + '" text-anchor="middle">' + escapeHtml(p.fields.title) + '</text>' +
+                    '<text class="smeta" x="' + c.x + '" y="' + (y + 20) + '" text-anchor="middle">' + escapeHtml(p.fields.year) + ' · ' + escapeHtml(p.fields.team_label) + '</text></g>';
+            });
+
+            // Shared people, grouped by the exact set of teams they're on
+            var groups = Object.keys(regions).filter(function (key) { return key.indexOf("+") >= 0; })
+                .map(function (key) { return { sets: key.split("+").map(Number), members: regions[key] }; });
+            var spots = hubSpots(groups, hub);
+            var links = "", faces = "";
+            spots.forEach(function (spot) {
+                spot.person.sets.forEach(function (k) {
+                    var c = hub.C[k], dx = spot.x - c.x, dy = spot.y - c.y, d = Math.hypot(dx, dy);
+                    links += '<line class="link" data-j="' + k + '" data-p="' + spot.person.pk + '"' +
+                        ' x1="' + (c.x + dx / d * hub.r) + '" y1="' + (c.y + dy / d * hub.r) + '"' +
+                        ' x2="' + (spot.x - dx / d * (ar + 4)) + '" y2="' + (spot.y - dy / d * (ar + 4)) + '"/>';
+                });
+                faces += personSvg(spot.person, spot.x, spot.y, uid++, ar);
+            });
+
+            // Everyone else sits inside their only team's circle
+            sets.forEach(function (p, i) {
+                var members = regions[String(i)] || [], max = 3 * hub.rows, shown = members;
+                if (members.length > max) {
+                    var rest = members.slice(max - 1);
+                    shown = members.slice(0, max - 1).concat([{
+                        pk: "more-" + i, name: "+" + rest.length + " more", icon: "", sets: [i],
+                        more: rest.map(function (m) { return m.name; }).join(", ")
+                    }]);
+                }
+                // Wider than the default spacing, so names inside a circle don't touch
+                slots({ at: { x: hub.C[i].x, y: hub.C[i].y + 8 }, cols: 3, dx: 2 * ar + 38 }, shown.length, ar).forEach(function (spot, n) {
+                    faces += personSvg(shown[n], spot.x, spot.y, uid++, ar);
+                });
+            });
+            return { svg: out + links + faces, h: hub.h };
         }
 
         function slots(reg, count, ar) {
-            var dx = 2 * ar + 20, dy = 2 * ar + 34;   // 72 and 86 at the full avatar size
+            var dx = reg.dx || 2 * ar + 20, dy = 2 * ar + 34;   // 72 and 86 at the full avatar size
             if (reg.dir) {
                 return Array.from({ length: count }, function (_, i) {
                     var t = (i - (count - 1) / 2) * dy;
@@ -433,10 +454,6 @@
             empty.classList.toggle("hide", hasSets);
             if (!hasSets) { svg.innerHTML = ""; return; }
 
-            var ellipses = sets.length > 3;
-            var g = ellipses ? ellipseGeometry(sets.length) : geometry(sets.length);
-            var ar = ellipses ? g.ar : AR;
-
             // Which of the drawn sets each person belongs to
             var people = {};
             sets.forEach(function (p, i) {
@@ -451,24 +468,20 @@
                 (regions[key] = regions[key] || []).push(people[pk]);
             });
 
-            var out = "";
+            if (sets.length > 3) {
+                var hub = hubSvg(sets, people, regions);
+                svg.innerHTML = hub.svg;
+                svg.setAttribute("viewBox", "0 0 1000 " + hub.h);
+                finish(sets);
+                return;
+            }
+
+            var g = geometry(sets.length), out = "";
             sets.forEach(function (p, i) {
-                if (ellipses) {
-                    var e = g.E[i];
-                    out += '<ellipse class="set" data-j="' + i + '" cx="' + e.x + '" cy="' + e.y + '" rx="' + e.a + '" ry="' + e.b +
-                        '" transform="rotate(' + (e.r * 180 / Math.PI) + ' ' + e.x + ' ' + e.y + ')"/>';
-                } else {
-                    out += '<circle class="set" data-j="' + i + '" cx="' + g.C[i].x + '" cy="' + g.C[i].y + '" r="' + R + '"/>';
-                }
+                out += '<circle class="set" data-j="' + i + '" cx="' + g.C[i].x + '" cy="' + g.C[i].y + '" r="' + R + '"/>';
             });
             sets.forEach(function (p, i) {
-                var l = ellipses ? g.labels[i] : labelSpot(g.C[i], i, sets.length);
-                if (ellipses) {
-                    // Rough text width, so the viewBox leaves room for the label
-                    var w = Math.max(p.fields.title.length * 14, (p.fields.year + p.fields.team_label).length * 7 + 30);
-                    var x0 = l.a === "end" ? l.x - w : l.a === "start" ? l.x : l.x - w / 2;
-                    g.grow(x0, l.y - 26, x0 + w, l.y + 26);
-                }
+                var l = labelSpot(g.C[i], i, sets.length);
                 out += '<g class="slabel" data-j="' + i + '"><text class="sname" x="' + l.x + '" y="' + l.y + '" text-anchor="' + l.a + '">' + escapeHtml(p.fields.title) + '</text>' +
                     '<text class="smeta" x="' + l.x + '" y="' + (l.y + 20) + '" text-anchor="' + l.a + '">' + escapeHtml(p.fields.year) + ' · ' + escapeHtml(p.fields.team_label) + '</text></g>';
             });
@@ -480,10 +493,9 @@
             }
             var uid = 0;
             keys.forEach(function (key) {
-                var reg = ellipses ? ellipseRegion(key, g) : region(key, g), members = regions[key] || [];
+                var reg = region(key, g), members = regions[key] || [];
                 if (!members.length) {
-                    // Past three sets most overlaps are empty; marking them all would only add noise
-                    if (sets.length > 1 && !ellipses) out += '<text class="empty" x="' + reg.at.x + '" y="' + (reg.at.y + 5) + '" text-anchor="middle">∅</text>';
+                    if (sets.length > 1) out += '<text class="empty" x="' + reg.at.x + '" y="' + (reg.at.y + 5) + '" text-anchor="middle">∅</text>';
                     return;
                 }
                 var shown = members;
@@ -494,20 +506,17 @@
                         more: rest.map(function (m) { return m.name; }).join(", ")
                     }]);
                 }
-                slots(reg, shown.length, ar).forEach(function (spot, i) { out += personSvg(shown[i], spot.x, spot.y, uid++, ar); });
+                slots(reg, shown.length, AR).forEach(function (spot, i) { out += personSvg(shown[i], spot.x, spot.y, uid++, AR); });
             });
             svg.innerHTML = out;
+            svg.setAttribute("viewBox", "0 0 1000 " + g.h);
+            finish(sets);
+        }
 
-            if (ellipses) {
-                var pad = 24, b = g.box;
-                svg.setAttribute("viewBox", [b.x0 - pad, b.y0 - pad, b.x1 - b.x0 + 2 * pad, b.y1 - b.y0 + 2 * pad].join(" "));
-            } else {
-                svg.setAttribute("viewBox", "0 0 1000 " + g.h);
-            }
+        function finish(sets) {
             svg.setAttribute("aria-label", sets.map(function (p) {
                 return p.fields.title + ": " + p.fields.peers.map(function (peer) { return peer.name; }).join(", ");
             }).join(". "));
-
             bindFocus();
         }
 
@@ -519,6 +528,9 @@
             Array.prototype.forEach.call(svg.querySelectorAll(".person"), function (el) {
                 var mine = el.getAttribute("data-sets").split(" ");
                 el.classList.toggle("hot", !!setIdx && (who ? el.getAttribute("data-p") === who : mine.indexOf(setIdx[0]) >= 0));
+            });
+            Array.prototype.forEach.call(svg.querySelectorAll(".link"), function (el) {
+                el.classList.toggle("hot", !!setIdx && (who ? el.getAttribute("data-p") === who : setIdx.indexOf(el.getAttribute("data-j")) >= 0));
             });
         }
 
