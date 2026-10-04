@@ -1,0 +1,23 @@
+{% load static %}
+<footer class="zr site-foot" id="site-footer">
+    <div class="zr-wrap">
+        <div class="foot-row">
+            <p class="foot-gh">
+                <a href="https://github.com/ZhillanTLE" target="_blank" rel="noopener" id="gh-link">
+                    <span id="gh-total">My contributions</span> in the last year on <span class="u">GitHub</span> ↗
+                </a>
+            </p>
+            <nav class="foot-contact" aria-label="Contact">
+                <span class="lbl">Contact</span>
+                <a href="https://www.linkedin.com/in/zhillan-baniaksa-0b9244235/" target="_blank" rel="noopener">LinkedIn ↗</a>
+                <a href="mailto:zhillan.baniaksa@ui.ac.id">Email ↗</a>
+            </nav>
+        </div>
+
+        <!-- Drawn by contributions.js from get_github_contributions; stays empty if GitHub can't be reached -->
+        <div class="gh-graph" id="gh-graph" data-endpoint="{% url 'main:get_github_contributions' %}" hidden>
+            <div class="gh-grid" id="gh-grid" role="img"></div>
+        </div>
+    </div>
+</footer>
+<script src="{% static 'js/contributions.js' %}?v=3" defer></script>

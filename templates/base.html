@@ -42,8 +42,9 @@
     {% block content %} {% endblock content %}
 
     {% include "components/guestbook.html" %}
+    {% include "components/site_footer.html" %}
     <script>
-    /* Guestbook (the footer on every page): the sign row posts with fetch and the new signature drops in above it */
+    /* Guestbook (closes every page): the sign row posts with fetch and the new signature drops in above it */
     (function () {
         var form = document.getElementById("sign");
         if (!form) return;
