@@ -1,0 +1,37 @@
+<footer class="zr gb" id="guestbook">
+    <div class="zr-wrap">
+        <div class="sec-head">
+            <h2 class="sec">Guestbook</h2>
+            <p class="lbl">sign it on the way out</p>
+        </div>
+        <div class="log" id="log">
+            <div class="log-row head">
+                <span class="lbl">№</span><span></span><span class="lbl">name</span><span class="lbl">note</span><span class="lbl dt-h">signed</span>
+            </div>
+            {% for guest in guest_list %}
+            <div class="log-row">
+                <span class="no">{{ forloop.counter|stringformat:"02d" }}</span>
+                {% if guest.icon %}<img src="{{ guest.icon_src }}" alt="">{% else %}<span class="pen" aria-hidden="true"></span>{% endif %}
+                <span class="nm">{{ guest.name }}</span>
+                <span class="nt">{{ guest.message }}</span>
+                <span class="dt">{{ guest.created_at|date:"j M Y" }}</span>
+            </div>
+            {% endfor %}
+            <form class="log-row sign" id="sign" method="post" action="{% url 'main:create_peer' %}">
+                {% csrf_token %}
+                <span class="no" id="sign-no">{{ guest_list|length|add:1|stringformat:"02d" }}</span>
+                <button type="button" class="pen pen-btn" id="gb-photo-toggle"
+                        aria-expanded="false" aria-controls="gb-icon"
+                        title="Add a photo (optional)">+</button>
+                <input id="gb-name" name="name" placeholder="your name" aria-label="Your name" maxlength="100" required>
+                <input id="gb-note" name="message" placeholder="say something" aria-label="Your note" maxlength="256" required>
+                <button class="btn" type="submit">sign</button>
+                <input id="gb-icon" class="gb-icon" name="icon" type="url"
+                       placeholder="photo url, optional · a google drive share link works"
+                       aria-label="Photo URL (optional)" maxlength="255" hidden>
+            </form>
+            <div class="log-row blank" aria-hidden="true"></div>
+            <div class="log-row blank" aria-hidden="true"></div>
+        </div>
+    </div>
+</footer>
