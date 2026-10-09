@@ -1,6 +1,27 @@
 {% load static %}
 <footer class="zr site-foot" id="site-footer">
     <div class="zr-wrap">
+        <!-- Drawn by bouquet.js from a Desmos graph; each flower sways, blooms on hover and sheds petals on click.
+             It sits on the footer's top border, half in the guestbook's bottom padding -->
+        <div class="bouquet">
+            <canvas class="bouquet-canvas" id="bouquet-canvas" tabindex="0" role="button"
+                    aria-label="A bouquet of flowers. Press Enter to read the note tied to it."
+                    aria-controls="bouquet-note" aria-expanded="false"></canvas>
+            <div class="bouquet-side">
+                <p class="bouquet-hint">Click a flower, or the wrapping for the note.</p>
+                <aside class="bouquet-note" id="bouquet-note" hidden>
+                    {% if user.is_authenticated %}
+                        <span class="to">untuk {{user.username}}</span>
+                        <p>terima kasih, ya, sudah kerja keras selalu :]</p>
+                    {% else %}
+                        <span class="to">untuk kamu</span>
+                        <p>terima kasih, ya, sudah kerja keras selalu :]</p>
+                    {% endif %}
+                    <button type="button" data-close aria-label="Close note">×</button>
+                </aside>
+            </div>
+        </div>
+
         <div class="foot-row">
             <p class="foot-gh">
                 <a href="https://github.com/ZhillanTLE" target="_blank" rel="noopener" id="gh-link">
@@ -21,3 +42,4 @@
     </div>
 </footer>
 <script src="{% static 'js/contributions.js' %}?v=4" defer></script>
+<script src="{% static 'js/bouquet.js' %}?v=1" defer></script>
