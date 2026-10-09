@@ -18,6 +18,8 @@
     --mono: "Martian Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --gut: clamp(16px, 4vw, 56px);
     --ease: cubic-bezier(.2, .8, .2, 1);
+    --bq-w: clamp(190px, 19vw, 230px);          /* footer bouquet width */
+    --bq-up: calc(var(--bq-w) * 36 / 33.5 * .69);   /* how far it rises above the footer border */
     font-family: var(--body);
     color: var(--ink);
     -webkit-font-smoothing: antialiased;
@@ -282,7 +284,7 @@
 
 
 /* ---------- Guestbook ---------- */
-.zr.gb { padding-block: clamp(80px, 11vw, 160px) clamp(64px, 8vw, 120px); }
+.zr.gb { padding-block: clamp(80px, 11vw, 160px) calc(var(--bq-up) + clamp(16px, 2vw, 32px)); }   /* bottom: room for the footer bouquet */
 .zr .log { border-top: 1px solid var(--ink); }
 .zr .log-row {
     display: grid;
@@ -417,7 +419,95 @@
 .zr .gh-d[data-l="3"] { background: #9ccbee; }
 .zr .gh-d[data-l="4"] { background: #82bce8; }
 
+/* Bouquet (bouquet.js) sits on the footer's top border: the flowers rise into the guestbook's bottom padding,
+   the wrap dips into the footer. The canvas keeps a 33.5 × 36 unit window; the border crosses it at y = -8,
+   69% of the way down (--bq-up is that height in px). The note is a gift tag.
+   It lines up with the content's right edge; --bq-gap is the empty room right of the flowers, kept for blooming. */
+.zr.site-foot { position: relative; --bq-gap: calc(var(--bq-w) * 3 / 33.5); }
+.zr .bouquet {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    right: calc(max(0px, (100% - 1440px) / 2) + var(--gut) - var(--bq-gap));
+    width: var(--bq-w);
+    transform: translateY(calc(-1 * var(--bq-up)));
+}
+.zr .foot-row { position: relative; z-index: 3; }   /* the canvas' empty bottom edge mustn't cover the GitHub link */
+.zr .bouquet-canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 33.5 / 36;
+    touch-action: manipulation;
+    border-radius: 12px;
+}
+/* Beside the canvas, resting just above the border; the note opens upward over the hint */
+.zr .bouquet-side {
+    position: absolute;
+    right: calc(100% + 8px);
+    bottom: calc(var(--bq-w) * 36 / 33.5 - var(--bq-up) + 12px);
+    width: max-content;
+    max-width: 40ch;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    text-align: right;
+    gap: 12px;
+}
+.zr .bouquet-hint { margin: 0; font-family: var(--mono); font-size: .72rem; color: var(--mute); letter-spacing: .02em; }
+.zr .bouquet-note {
+    position: relative;
+    max-width: 30ch;
+    text-align: left;
+    padding: 18px 44px 18px 20px;
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--card-ink);
+    transform: rotate(-2deg);
+    box-shadow: 0 10px 30px rgb(0 0 0 / .35);
+    animation: note-in .45s var(--ease);
+}
+.zr .bouquet-note[hidden] { display: none; }
+.zr .bouquet-note .to { display: block; margin-bottom: 6px; font-family: var(--mono); font-size: .7rem; color: #E36495; }
+.zr .bouquet-note p { margin: 0; font-size: 1.05rem; line-height: 1.45; }
+.zr .bouquet-note button {
+    position: absolute; top: 6px; right: 6px;
+    width: 30px; height: 30px;
+    border: 0; border-radius: 50%;
+    background: none; color: var(--card-ink);
+    font-size: 1.2rem; line-height: 1; cursor: pointer;
+}
+.zr .bouquet-note button:hover { background: rgb(0 0 0 / .07); }
+@keyframes note-in { from { opacity: 0; transform: translateY(10px) rotate(-6deg) scale(.92); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .zr .bouquet-note { animation: none; }
+}
+
 @media (max-width: 700px) {
     .zr .foot-row { flex-direction: column; }
     .zr .gh-grid { --cell-min: 13px; }
+}
+
+/* Too narrow to fit between the GitHub line and the contacts: the bouquet still crosses the border, but in flow,
+   with the hint and note under it */
+@media (max-width: 1000px) {
+    .zr.site-foot { padding-top: 0; }
+    .zr .bouquet {
+        position: relative;
+        right: auto;
+        transform: none;
+        margin: calc(-1 * var(--bq-up)) calc(-1 * var(--bq-gap)) clamp(20px, 4vw, 32px) auto;
+    }
+    .zr .bouquet-side {
+        position: static;
+        width: auto;
+        max-width: none;
+        margin-top: 4px;
+        padding-right: var(--bq-gap);
+        flex-direction: column;
+        align-items: flex-end;
+    }
+    /* Pops up over the flowers so opening it doesn't push the footer down */
+    .zr .bouquet-note { position: absolute; bottom: 45%; right: var(--bq-gap); text-align: left; width: max-content; max-width: min(30ch, 86vw); }
 }
