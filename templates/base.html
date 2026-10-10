@@ -17,8 +17,11 @@
     <header class ="site-header">
         <div class="container">
             <nav class="nav-jump">
-                <a href="{% url 'main:show_main' %}" {% if request.resolver_match.url_name == 'show_main' %}class="is-active"{% endif %}>Profile</a>
-                <a href="{% url 'main:show_projects' %}" {% if request.resolver_match.url_name == 'show_projects' %}class="is-active"{% endif %}>Work</a>
+                <span class="nav-pages">
+                    <a href="{% url 'main:show_main' %}" {% if request.resolver_match.url_name == 'show_main' %}class="is-active" aria-current="page"{% endif %}>About me</a>
+                    <a href="{% url 'main:show_projects' %}" {% if request.resolver_match.url_name == 'show_projects' %}class="is-active" aria-current="page"{% endif %}>Things I've made</a>
+                </span>
+                <span class="nav-auth">
                 {% if user.is_authenticated %}
                     <span class="nav-user">
                         {{ user.username }}
@@ -28,8 +31,9 @@
                     <a href="{% url 'main:logout' %}">Logout</a>
                 {% else %}
                     <a href="{% url 'main:login' %}">Login</a>
-                    <a href="{% url 'main:register' %}">Register</a>  
-                {% endif %}  
+                    <a href="{% url 'main:register' %}">Register</a>
+                {% endif %}
+                </span>
             </nav>
         </div>
     </header>

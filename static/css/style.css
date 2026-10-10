@@ -40,17 +40,31 @@ h1, .brand {
     padding: 0 1.5rem;
 }
 
-/* Header with Flexbox */
+/* Floating header: a translucent pill that stays a little below the top edge while the page scrolls under it */
+html {
+    scroll-padding-top: 5.5rem;   /* in-page jumps land below the bar */
+}
+
 .site-header {
-    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 5;                   /* under modals (10) and toasts (30) */
+    padding: 0.75rem 1rem 0;
 }
 
 .site-header .container {
     display: flex;
-    justify-content: center;
     align-items: center;
-    gap: 2.5rem;
-    padding: 1.25rem 1.5rem;
+    width: fit-content;           /* the pill hugs its links instead of spanning the page */
+    max-width: 100%;
+    margin-inline: auto;
+    padding: 0.35rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgb(26 26 26 / 0.72);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    backdrop-filter: blur(14px) saturate(1.4);
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
 }
 
 .brand {
@@ -63,22 +77,50 @@ h1, .brand {
 
 }
 
+/* Page links, then a hairline, then Login/Register (or the user and Logout) */
 .site-header nav {
     color: var(--ink);
     display: flex;
-    gap: 2rem;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.site-header .nav-pages,
+.site-header .nav-auth {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.site-header .nav-auth {
+    margin-left: 0.4rem;
+    padding-left: 0.65rem;
+    border-left: 1px solid var(--line);
+}
+
+.site-header .nav-user {
+    padding: 0 0.6rem;
+    white-space: nowrap;
+    color: var(--text-muted);
+    font-size: 0.9rem;
 }
 
 .site-header nav a {
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
     color: var(--text-muted);
     text-decoration: none;
     font-size: 0.95rem;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 .site-header nav a:hover,
 .site-header nav a.is-active {
     color: var(--ink);
+}
+
+.site-header nav a.is-active {
+    background: rgb(255 255 255 / 0.08);
 }
 
 .nav-role {
@@ -933,19 +975,26 @@ button.social-link {
 
 /* Responsiveness */
 @media (max-width: 780px) {
-    .site-header .nav-jump {
-        display: flexbox;
-        padding: 0.67rem;
-    }
-
     .container {
         padding: 0 1.25rem;
     }
 
-    /* One row, one shared style for all three header items */
+    /* A tighter pill on phones */
+    .site-header {
+        padding: 0.6rem 0.75rem 0;
+    }
+
     .site-header .container {
-        gap: 0.5rem;
-        padding: 0;
+        padding: 0.35rem 0.4rem;
+    }
+
+    .site-header nav a {
+        padding: 0.4rem 0.65rem;
+    }
+
+    .site-header .nav-auth {
+        margin-left: 0.15rem;
+        padding-left: 0.3rem;
     }
 
     .site-header .container a {
@@ -1063,6 +1112,13 @@ button.social-link {
 @keyframes fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+
+/* Phones: the signed-in name gives way so the page links and Logout stay on one row */
+@media (max-width: 480px) {
+    .site-header .nav-user {
+        display: none;
+    }
 }
 
 @media (prefers-reduced-motion: no-preference) {
