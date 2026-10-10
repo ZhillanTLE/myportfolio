@@ -5,14 +5,14 @@
 }
 
 :root {
-    --ink: #e6edf3;
-    --paper: #121212;
-    --accent: #21262d;
+    --ink: #ececec;
+    --paper: #131313;
+    --accent: #1f1f1f;
     --accent-dark: #5583c8;
-    --line: #30363d;
-    --text-muted: #8b949e;
+    --line: #2a2a2a;
+    --text-muted: #9a9a9a;
     --border: 3px solid var(--line);
-    --surface: #161b22;
+    --surface: #1a1a1a;
     --button: #171717;
     --button-background: #585858;
     --mention: #0af;
@@ -248,8 +248,8 @@ html {
 
 .white-social {
     color: var(--paper);
-    background-color: #ffffff;
-    border-color: #ffffff;
+    background-color: #f2f2f2;
+    border-color: #f2f2f2;
 }
 
 .white-social:hover {
@@ -475,7 +475,7 @@ html {
     justify-content: center;
     width: 28px;
     height: 28px;
-    background: #fff;
+    background: #f2f2f2;
     color: var(--paper);
     border-radius: 5%;
     text-decoration: none;
@@ -546,8 +546,8 @@ html {
     width: 100%;
     max-width: 520px;
     padding: 2.25rem 2rem 2.5rem;
-    background: #fff;
-    color: #111;
+    background: #f2f2f2;
+    color: #161616;
     border-radius: 4px;
 }
 
@@ -586,8 +586,8 @@ html {
     padding: 0.6rem 1rem;
     border: 1.5px solid #8a8a8a;
     border-radius: 999px;
-    background: #fff;
-    color: #111;
+    background: #f2f2f2;
+    color: #161616;
     font: inherit;
 }
 
@@ -605,7 +605,7 @@ html {
 .field input:focus,
 .field textarea:focus {
     outline: none;
-    border-color: #111;
+    border-color: #161616;
 }
 
 .row {
@@ -625,17 +625,17 @@ html {
 .collab-input button {
     width: 2.75rem;
     height: 2.75rem;
-    border: 1.5px solid #111;
+    border: 1.5px solid #161616;
     border-radius: 50%;
-    background: #fff;
-    color: #111;
+    background: #f2f2f2;
+    color: #161616;
     font-size: 1.5rem;
     line-height: 1;
     cursor: pointer;
 }
 
 .collab-input button:hover {
-    background: #f2f2f2;
+    background: #e4e4e4;
 }
 
 
@@ -660,10 +660,10 @@ html {
 .chip {
     display: inline-block;
     padding: 0.3rem 1rem;
-    border: 1.5px solid #111;
+    border: 1.5px solid #161616;
     border-radius: 999px;
-    background: #fff;
-    color: #111;
+    background: #f2f2f2;
+    color: #161616;
     font-size: 0.95rem;
     cursor: pointer;
     user-select: none;
@@ -674,7 +674,7 @@ html {
 }
 
 .chips input:focus-visible + .chip {
-    outline: 2px solid #111;
+    outline: 2px solid #161616;
     outline-offset: 2px;
 }
 
@@ -688,8 +688,8 @@ html {
     padding: 0.7rem 1.4rem;
     border: 0;
     border-radius: 4px;
-    background: #111;
-    color: #fff;
+    background: #161616;
+    color: #f2f2f2;
     font: inherit;
     font-weight: 600;
     cursor: pointer;
@@ -967,7 +967,7 @@ button.social-link {
 }
 
 .actions--split a {
-    color: #111;
+    color: #161616;
     font-size: 0.9rem;
 }
 

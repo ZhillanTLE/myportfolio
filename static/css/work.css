@@ -2,18 +2,18 @@
    Everything is scoped under .zr so the rest of the site keeps style.css as is. */
 
 .zr {
-    --paper: #121212;
-    --ink: #eceef1;
-    --mute: #8a919b;
-    --faint: #454b54;
-    --line: #22262d;
-    --raise: #1a1a1b;
+    --paper: #131313;
+    --ink: #ececec;
+    --mute: #959595;
+    --faint: #474747;
+    --line: #262626;
+    --raise: #1b1b1b;
     --blue: #5583c8;
     --cyan: #00aaff;
     --gold: #e3b341;
     --bad: #f85149;
-    --card: #f5f5f3;
-    --card-ink: #0a0a0a;
+    --card: #f2f2f2;
+    --card-ink: #161616;
     --body: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     --mono: "Martian Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --gut: clamp(16px, 4vw, 56px);
@@ -200,7 +200,7 @@
 .zr .pcard .shot img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; border: 1px solid rgba(10, 10, 10, .12); pointer-events: none; transition: filter .45s ease; }
 .zr .pcard:not([data-depth="0"]) .shot img { filter: blur(2px); }
 .zr .pcard .foot { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; font-size: .92rem; min-width: 0; }
-.zr .pcard .foot .mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .62rem; color: #6a6f76; }
+.zr .pcard .foot .mono { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .62rem; color: #6e6e6e; }
 .zr .glare { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at var(--gx, 50%) var(--gy, 30%), rgba(255, 255, 255, .7), rgba(255, 255, 255, 0) 42%); mix-blend-mode: soft-light; opacity: 0; transition: opacity .3s ease; }
 .zr .pcard.live .glare { opacity: 1; }
 .zr .deck-ctl { display: flex; justify-content: space-between; align-items: center; margin-top: 26px; }
@@ -236,7 +236,7 @@
 .zr .pstar:hover svg path { stroke: var(--gold); }
 .zr .pstar.on { border-color: var(--gold); }
 .zr .pstar.on svg path { fill: var(--gold); stroke: var(--gold); }
-.zr .pstar .cnt { padding: .2rem .45rem; border-radius: 999px; background: #21262d; font-family: var(--mono); font-stretch: 87.5%; font-size: .7rem; }
+.zr .pstar .cnt { padding: .2rem .45rem; border-radius: 999px; background: #242424; font-family: var(--mono); font-stretch: 87.5%; font-size: .7rem; }
 
 .zr .confirm { color: var(--ink); background: var(--raise); border: 1px solid var(--line); border-radius: 10px; }
 
@@ -263,8 +263,8 @@
 .zr .picker button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .zr .venn-wrap { overflow-x: auto; margin-inline: calc(var(--gut) * -1); padding-inline: var(--gut); }
 .zr .venn { display: block; width: 100%; max-width: 1000px; min-width: 620px; height: auto; margin-inline: auto; }
-.zr .venn .set { fill: rgba(236, 238, 241, .014); stroke: var(--faint); stroke-width: 1.2; cursor: pointer; transition: fill .25s ease, stroke .25s ease, opacity .25s ease; }
-.zr .venn .set.hot { fill: rgba(236, 238, 241, .05); stroke: var(--ink); }
+.zr .venn .set { fill: rgba(236, 236, 236, .014); stroke: var(--faint); stroke-width: 1.2; cursor: pointer; transition: fill .25s ease, stroke .25s ease, opacity .25s ease; }
+.zr .venn .set.hot { fill: rgba(236, 236, 236, .05); stroke: var(--ink); }
 .zr .venn .slabel { cursor: pointer; transition: opacity .25s ease; }
 .zr .venn .sname { font-family: var(--body); font-weight: 600; font-size: 26px; letter-spacing: -.02em; fill: var(--ink); }
 .zr .venn .smeta, .zr .venn .pname { font-family: var(--mono); font-stretch: 87.5%; font-size: 11.5px; fill: var(--mute); }
@@ -294,7 +294,7 @@
     border-bottom: 1px solid var(--line);
 }
 .zr .log-row.head { min-height: 40px; }
-.zr .log-row.blank { border-bottom-style: dashed; border-bottom-color: #1a1d22; }
+.zr .log-row.blank { border-bottom-style: dashed; border-bottom-color: #1d1d1d; }
 .zr .log-row .no { font-family: var(--mono); font-stretch: 87.5%; font-size: .68rem; color: var(--mute); }
 .zr .log-row img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; transition: transform .25s var(--ease); }
 .zr .log-row:hover img { transform: scale(1.2); }
