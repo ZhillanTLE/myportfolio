@@ -378,16 +378,23 @@
             return spots;
         }
 
+        // The hub is a wheel that turns about its middle. Each project (circle, label, members) is a spoke that
+        // counter-turns about its own centre, and shared people counter-turn in place, so nothing reads upside down.
+        // Every project carries its label both above and below its circle; wheel fades between the two (on a
+        // wrapper, so the hover dimming on .slabel still works).
         function hubSvg(sets, people, regions) {
-            var hub = HUB[sets.length], ar = hub.ar, out = "", uid = 0;
+            var hub = HUB[sets.length], ar = hub.ar, uid = 0;
             var cy = hub.C.reduce(function (a, c) { return a + c.y; }, 0) / hub.C.length;
 
-            sets.forEach(function (p, i) {
-                // Labels go above every circle except those below the middle (the plus's sides count as above)
-                var c = hub.C[i], above = c.y <= cy, y = above ? c.y - hub.r - 38 : c.y + hub.r + 36;
-                out += '<circle class="set" data-j="' + i + '" cx="' + c.x + '" cy="' + c.y + '" r="' + hub.r + '"/>';
-                out += '<g class="slabel" data-j="' + i + '"><text class="sname" x="' + c.x + '" y="' + y + '" text-anchor="middle">' + escapeHtml(p.fields.title) + '</text>' +
-                    '<text class="smeta" x="' + c.x + '" y="' + (y + 20) + '" text-anchor="middle">' + escapeHtml(p.fields.year) + ' · ' + escapeHtml(p.fields.team_label) + '</text></g>';
+            var spokes = sets.map(function (p, i) {
+                var c = hub.C[i];
+                function label(side) {
+                    var y = side === "above" ? c.y - hub.r - 38 : c.y + hub.r + 36;
+                    return '<g class="side" data-side="' + side + '"><g class="slabel" data-j="' + i + '"><text class="sname" x="' + c.x + '" y="' + y + '" text-anchor="middle">' + escapeHtml(p.fields.title) + '</text>' +
+                        '<text class="smeta" x="' + c.x + '" y="' + (y + 20) + '" text-anchor="middle">' + escapeHtml(p.fields.year) + ' · ' + escapeHtml(p.fields.team_label) + '</text></g></g>';
+                }
+                return '<g class="spoke" data-x="' + c.x + '" data-y="' + c.y + '">' +
+                    '<circle class="set" data-j="' + i + '" cx="' + c.x + '" cy="' + c.y + '" r="' + hub.r + '"/>' + label("above") + label("below");
             });
 
             // Shared people, grouped by the exact set of teams they're on
@@ -402,7 +409,7 @@
                         ' x1="' + (c.x + dx / d * hub.r) + '" y1="' + (c.y + dy / d * hub.r) + '"' +
                         ' x2="' + (spot.x - dx / d * (ar + 4)) + '" y2="' + (spot.y - dy / d * (ar + 4)) + '"/>';
                 });
-                faces += personSvg(spot.person, spot.x, spot.y, uid++, ar);
+                faces += '<g class="upright" data-x="' + spot.x + '" data-y="' + spot.y + '">' + personSvg(spot.person, spot.x, spot.y, uid++, ar) + '</g>';
             });
 
             // Everyone else sits inside their only team's circle
@@ -417,11 +424,84 @@
                 }
                 // Wider than the default spacing, so names inside a circle don't touch
                 slots({ at: { x: hub.C[i].x, y: hub.C[i].y + 8 }, cols: 3, dx: 2 * ar + 38 }, shown.length, ar).forEach(function (spot, n) {
-                    faces += personSvg(shown[n], spot.x, spot.y, uid++, ar);
+                    spokes[i] += personSvg(shown[n], spot.x, spot.y, uid++, ar);
                 });
+                spokes[i] += '</g>';
             });
-            return { svg: out + links + faces, h: hub.h };
+            return { svg: '<g class="wheel" data-x="500" data-y="' + cy + '">' + spokes.join("") + links + faces + '</g>', h: hub.h };
         }
+
+        // Turns the hub slowly; eases to a stop while the diagram is hovered, focused or touched, and sleeps off screen
+        var wheel = (function () {
+            var DEG_PER_SEC = 4;   // one turn every 90 seconds
+            var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            var angle = 0, speed = 0, held = false, visible = false, frame = 0, last = 0, parts = null;
+
+            function at(el) { return [parseFloat(el.getAttribute("data-x")), parseFloat(el.getAttribute("data-y"))]; }
+
+            function turn() {
+                if (!parts) return;
+                var t = angle * Math.PI / 180, cos = Math.cos(t), sin = Math.sin(t);
+                parts.wheel.setAttribute("transform", "rotate(" + angle + " " + parts.mid[0] + " " + parts.mid[1] + ")");
+                parts.upright.forEach(function (el) {
+                    var p = at(el);
+                    el.setAttribute("transform", "rotate(" + -angle + " " + p[0] + " " + p[1] + ")");
+                });
+                parts.spokes.forEach(function (el) {
+                    var p = at(el), dx = p[0] - parts.mid[0], dy = p[1] - parts.mid[1], ring = Math.hypot(dx, dy) || 1;
+                    el.setAttribute("transform", "rotate(" + -angle + " " + p[0] + " " + p[1] + ")");
+                    // How far below the middle this spoke is now: its label crosses under the circle in a short fade
+                    // (about 6 degrees of turn) once the spoke is well down, so the two copies are rarely seen together
+                    var drop = (dx * sin + dy * cos) / ring, k = Math.min(1, Math.max(0, (drop - .4) / .1));
+                    k = k * k * (3 - 2 * k);
+                    Array.prototype.forEach.call(el.querySelectorAll(".side"), function (side) {
+                        var shown = side.getAttribute("data-side") === "below" ? k : 1 - k;
+                        side.style.opacity = shown;
+                        side.style.pointerEvents = shown < .5 ? "none" : "";
+                    });
+                });
+            }
+
+            function step(now) {
+                var dt = Math.min(.05, (now - last) / 1000 || 0);
+                last = now;
+                var target = held || !visible ? 0 : DEG_PER_SEC;
+                speed += (target - speed) * Math.min(1, dt * 3);
+                angle = (angle + speed * dt) % 360;
+                turn();
+                frame = speed > .01 || target > 0 ? requestAnimationFrame(step) : 0;
+            }
+
+            function wake() {
+                if (still || frame || !parts) return;
+                last = performance.now();
+                frame = requestAnimationFrame(step);
+            }
+
+            function hold(on) { held = on; if (!on) wake(); }
+            svg.addEventListener("pointerenter", function () { hold(true); });
+            svg.addEventListener("pointerleave", function () { hold(false); });
+            svg.addEventListener("focusin", function () { hold(true); });
+            svg.addEventListener("focusout", function () { hold(false); });
+            new IntersectionObserver(function (entries) {
+                visible = entries[0].isIntersecting;
+                if (visible) wake();
+            }).observe(svg);
+
+            return {
+                // Called after every draw; keeps the current angle so a redraw doesn't jump back to the start
+                attach: function () {
+                    var root = svg.querySelector(".wheel");
+                    parts = root && {
+                        wheel: root, mid: at(root),
+                        spokes: Array.prototype.slice.call(svg.querySelectorAll(".spoke")),
+                        upright: Array.prototype.slice.call(svg.querySelectorAll(".upright"))
+                    };
+                    turn();
+                    wake();
+                }
+            };
+        })();
 
         function slots(reg, count, ar) {
             var dx = reg.dx || 2 * ar + 20, dy = 2 * ar + 34;   // 72 and 86 at the full avatar size
@@ -476,6 +556,7 @@
                 svg.innerHTML = hub.svg;
                 svg.setAttribute("viewBox", "0 0 1000 " + hub.h);
                 finish(sets);
+                wheel.attach();
                 return;
             }
 
@@ -514,6 +595,7 @@
             svg.innerHTML = out;
             svg.setAttribute("viewBox", "0 0 1000 " + g.h);
             finish(sets);
+            wheel.attach();   // no hub here, so the wheel rests
         }
 
         function finish(sets) {
