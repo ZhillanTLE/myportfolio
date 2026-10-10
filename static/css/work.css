@@ -469,7 +469,7 @@
 }
 .zr .bouquet-note[hidden] { display: none; }
 .zr .bouquet-note .to { display: block; margin-bottom: 6px; font-family: var(--mono); font-size: .7rem; color: #E36495; }
-.zr .bouquet-note p { margin: 0; font-size: 1.05rem; line-height: 1.45; }
+.zr .bouquet-note p { margin: 0; font-size: 1.05rem; line-height: 1.45; overflow-wrap: anywhere; }   /* COSMICCCC… wraps */
 .zr .bouquet-note button {
     position: absolute; top: 6px; right: 6px;
     width: 30px; height: 30px;

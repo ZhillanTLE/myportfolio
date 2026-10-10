@@ -10,13 +10,8 @@
             <div class="bouquet-side">
                 <p class="bouquet-hint">Click a flower, or the wrapping for the note.</p>
                 <aside class="bouquet-note" id="bouquet-note" hidden>
-                    {% if user.is_authenticated %}
-                        <span class="to">untuk {{user.username}}</span>
-                        <p>terima kasih, ya, sudah kerja keras selalu :]</p>
-                    {% else %}
-                        <span class="to">untuk kamu</span>
-                        <p>terima kasih, ya, sudah kerja keras selalu :]</p>
-                    {% endif %}
+                    <span class="to">untuk {% if user.is_authenticated %}{{ user.username }}{% else %}kamu{% endif %}</span>
+                    <p id="bouquet-message">terima kasih, ya, sudah kerja keras selalu :]</p>
                     <button type="button" data-close aria-label="Close note">×</button>
                 </aside>
             </div>
@@ -42,4 +37,4 @@
     </div>
 </footer>
 <script src="{% static 'js/contributions.js' %}?v=4" defer></script>
-<script src="{% static 'js/bouquet.js' %}?v=1" defer></script>
+<script src="{% static 'js/bouquet.js' %}?v=2" defer></script>

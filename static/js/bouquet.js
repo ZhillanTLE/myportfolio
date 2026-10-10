@@ -288,9 +288,28 @@
         if (petals.length > 160) petals.splice(0, petals.length - 160);
     }
 
+    // Each time the note opens it says something different (never the same line twice in a row)
+    const MESSAGES = [
+        'terima kasih, ya, sudah kerja keras selalu :]',
+        'kamu kesini pasti lagi nunda kerjaan ya. gapapa, aku juga :]',
+        'capek? sama. tos dulu ✋',
+        'when yh',
+        'COSMICCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+        'i love pbp',
+        'leave me a message',
+    ];
+    const message = document.getElementById('bouquet-message');
+    let lastMessage = 0;   // the template already shows the first one
+
     function toggleNote(force) {
         if (!note) return;
         const open = force ?? note.hidden;
+        if (open && note.hidden && message) {
+            let next = Math.floor(Math.random() * (MESSAGES.length - 1));
+            if (next >= lastMessage) next++;              // skip the line that was just shown
+            lastMessage = next;
+            message.textContent = MESSAGES[next];
+        }
         note.hidden = !open;
         canvas.setAttribute('aria-expanded', String(open));
     }
