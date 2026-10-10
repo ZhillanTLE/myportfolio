@@ -444,8 +444,9 @@
                   '<image href="' + escapeHtml(person.icon) + '" x="' + (x - ar) + '" y="' + (y - ar) + '" width="' + (2 * ar) + '" height="' + (2 * ar) + '" clip-path="url(#vc-' + uid + ')" preserveAspectRatio="xMidYMid slice"/>'
                 : '<circle class="disc" cx="' + x + '" cy="' + y + '" r="' + ar + '"/><text class="ini" x="' + x + '" y="' + (y + ar * .25) + '" text-anchor="middle" style="font-size:' + Math.round(ar * .7) + 'px">' + escapeHtml(person.name.charAt(0).toUpperCase()) + '</text>';
             return '<g class="person" data-p="' + person.pk + '" data-sets="' + person.sets.join(" ") + '" tabindex="0">' +
-                (person.more ? '<title>' + escapeHtml(person.more) + '</title>' : '') + face +
-                '<circle class="ring" cx="' + x + '" cy="' + y + '" r="' + ar + '"/>' +
+                (person.more ? '<title>' + escapeHtml(person.more) + '</title>' : '') +
+                '<g class="face" style="transform-origin:' + x + 'px ' + y + 'px">' + face +   // grows from its own centre on hover
+                '<circle class="ring" cx="' + x + '" cy="' + y + '" r="' + ar + '"/></g>' +
                 '<text class="pname" x="' + x + '" y="' + (y + ar + 18) + '" text-anchor="middle">' + escapeHtml(person.name) + '</text></g>';
         }
 
