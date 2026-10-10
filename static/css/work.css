@@ -285,7 +285,6 @@
 
 /* ---------- Guestbook ---------- */
 .zr.gb { padding-block: clamp(80px, 11vw, 160px) calc(var(--bq-up) + clamp(16px, 2vw, 32px)); }   /* bottom: room for the footer bouquet */
-.zr .log { border-top: 1px solid var(--ink); }
 .zr .log-row {
     display: grid;
     grid-template-columns: 2.6rem 2.2rem minmax(0, 13rem) minmax(0, 1fr) 7.5rem;
