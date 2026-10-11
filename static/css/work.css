@@ -285,7 +285,7 @@
 
 
 /* ---------- Guestbook ---------- */
-.zr.gb { padding-block: clamp(80px, 11vw, 160px) calc(var(--bq-up) + clamp(16px, 2vw, 32px)); }   /* bottom: room for the footer bouquet */
+.zr.gb { padding-top: clamp(80px, 11vw, 160px); }   /* no bottom padding: the footer keeps room above itself */
 .zr .log-row {
     display: grid;
     grid-template-columns: 2.6rem 2.2rem minmax(0, 13rem) minmax(0, 1fr) 7.5rem;
@@ -380,6 +380,7 @@
 
 /* ---------- Site footer: GitHub contributions and contact, full width ---------- */
 .zr.site-foot {
+    margin-top: calc(var(--bq-up) + clamp(16px, 2vw, 32px));   /* room above the border for the bouquet's flowers */
     border-top: 1px solid var(--line);
     background: var(--paper);
     padding-block: clamp(40px, 5vw, 72px) clamp(32px, 4vw, 56px);
@@ -420,7 +421,7 @@
 .zr .gh-d[data-l="3"] { background: #9ccbee; }
 .zr .gh-d[data-l="4"] { background: #82bce8; }
 
-/* Bouquet (bouquet.js) sits on the footer's top border: the flowers rise into the guestbook's bottom padding,
+/* Bouquet (bouquet.js) sits on the footer's top border: the flowers rise into the footer's top margin,
    the wrap dips into the footer. The canvas keeps a 33.5 × 36 unit window; the border crosses it at y = -8,
    69% of the way down (--bq-up is that height in px). The note is a gift tag.
    It lines up with the content's right edge; --bq-gap is the empty room right of the flowers, kept for blooming. */

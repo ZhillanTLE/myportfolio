@@ -110,6 +110,7 @@ def show_projects(request):
     context = {
         **PROFILE,
         "title_query": request.GET.get("title", "").strip(),
+        "guest_list": Peer.objects.filter(show_in_peers=True).order_by("created_at"),   # the guestbook closes this page
     }
     if request.user.has_perm("main.add_project"):
         context["form"] = ProjectForm()
@@ -187,7 +188,7 @@ def _wants_json(request):
 
 
 def create_peer(request):
-    """Signs the guestbook. The footer row on every page posts here with fetch; this page is the fallback."""
+    """Signs the guestbook. Its row on the Work page posts here with fetch; this page is the fallback."""
     form = PeerForm(request.POST or None)
 
     if request.method == "POST" and form.is_valid():

@@ -167,6 +167,10 @@ class TeamsAndGuestbookTest(TestCase):
         self.assertIn('<span class="nm">Tania</span>', page)
         self.assertIn('id="sign-no">02<', page)
 
+    def test_guestbook_lives_only_on_the_work_page(self):
+        self.assertContains(self.client.get(reverse("main:show_projects")), 'id="guestbook"')
+        self.assertNotContains(self.client.get(reverse("main:show_main")), 'id="guestbook"')
+
 
 class ExperienceAjaxTest(TestCase):
     def setUp(self):
