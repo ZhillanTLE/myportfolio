@@ -298,11 +298,13 @@
         var R = 205, AR = 26, MAX_SETS = 5;
         var projects = [], chosen = [];
 
-        // Hub layouts: project circle centres around a ring, circle and avatar size, viewBox height
+        // Hub layouts: project circle centres around a ring, circle and avatar size, viewBox height.
+        // Every centre sits the same distance from the middle so the shape stays even as the wheel turns,
+        // and the height leaves room for a label under a circle that has turned to the bottom.
         var HUB = {
             // A plus: top, right, bottom, left, so the middle is free for whoever is on several teams
-            4: { h: 950, r: 132, ar: 22, rows: 3, C: [{ x: 500, y: 202 }, { x: 800, y: 472 }, { x: 500, y: 742 }, { x: 200, y: 472 }] },
-            5: { h: 910, r: 112, ar: 20, rows: 2, C: [0, 1, 2, 3, 4].map(function (i) {
+            4: { h: 980, r: 132, ar: 22, rows: 3, C: [{ x: 500, y: 202 }, { x: 785, y: 487 }, { x: 500, y: 772 }, { x: 215, y: 487 }] },
+            5: { h: 960, r: 112, ar: 20, rows: 2, C: [0, 1, 2, 3, 4].map(function (i) {
                 var t = -Math.PI / 2 + i * 2 * Math.PI / 5;
                 return { x: Math.round(500 + 300 * Math.cos(t)), y: Math.round(480 + 300 * Math.sin(t)) };
             }) }
@@ -435,7 +437,7 @@
         var wheel = (function () {
             var DEG_PER_SEC = 4;   // one turn every 90 seconds
             var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-            var angle = 0, speed = 0, held = false, visible = false, frame = 0, last = 0, parts = null;
+            var angle = 0, speed = 0, hovered = false, focused = false, visible = false, frame = 0, last = 0, parts = null;
 
             function at(el) { return [parseFloat(el.getAttribute("data-x")), parseFloat(el.getAttribute("data-y"))]; }
 
@@ -465,7 +467,7 @@
             function step(now) {
                 var dt = Math.min(.05, (now - last) / 1000 || 0);
                 last = now;
-                var target = held || !visible ? 0 : DEG_PER_SEC;
+                var target = hovered || focused || !visible ? 0 : DEG_PER_SEC;
                 speed += (target - speed) * Math.min(1, dt * 3);
                 angle = (angle + speed * dt) % 360;
                 turn();
@@ -478,11 +480,11 @@
                 frame = requestAnimationFrame(step);
             }
 
-            function hold(on) { held = on; if (!on) wake(); }
-            svg.addEventListener("pointerenter", function () { hold(true); });
-            svg.addEventListener("pointerleave", function () { hold(false); });
-            svg.addEventListener("focusin", function () { hold(true); });
-            svg.addEventListener("focusout", function () { hold(false); });
+            svg.addEventListener("pointerenter", function () { hovered = true; });
+            svg.addEventListener("pointerleave", function () { hovered = false; wake(); });
+            // A person focused from the keyboard holds the wheel; a click on the empty diagram (which focuses the svg) doesn't
+            svg.addEventListener("focusin", function (e) { focused = e.target !== svg; });
+            svg.addEventListener("focusout", function () { focused = false; wake(); });
             new IntersectionObserver(function (entries) {
                 visible = entries[0].isIntersecting;
                 if (visible) wake();

@@ -263,6 +263,7 @@
 .zr .picker button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .zr .venn-wrap { overflow-x: auto; margin-inline: calc(var(--gut) * -1); padding-inline: var(--gut); }
 .zr .venn { display: block; width: 100%; max-width: 1000px; min-width: 620px; height: auto; margin-inline: auto; }
+.zr .venn:focus { outline: none; }   /* a click on the empty diagram focuses the svg; the people keep their own focus ring */
 .zr .venn .set { fill: rgba(236, 236, 236, .014); stroke: var(--faint); stroke-width: 1.2; cursor: pointer; transition: fill .25s ease, stroke .25s ease, opacity .25s ease; }
 .zr .venn .set.hot { fill: rgba(236, 236, 236, .05); stroke: var(--ink); }
 .zr .venn .slabel { cursor: pointer; transition: opacity .25s ease; }
