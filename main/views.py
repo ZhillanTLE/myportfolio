@@ -112,7 +112,8 @@ def show_projects(request):
         "title_query": request.GET.get("title", "").strip(),
         "guest_list": Peer.objects.filter(show_in_peers=True).order_by("created_at"),   # the guestbook closes this page
     }
-    if request.user.has_perm("main.add_project"):
+    # The modal posts to the DRF API, where only the owner may create projects
+    if request.user.is_superuser:
         context["form"] = ProjectForm()
     if request.user.has_perm("main.change_project"):
         context["teammate_form"] = TeammateForm()

@@ -395,8 +395,8 @@
                 var c = hub.C[i];
                 function label(side) {
                     var y = side === "above" ? c.y - hub.r - 38 : c.y + hub.r + 36;
-                    return '<g class="side" data-side="' + side + '"><g class="slabel" data-j="' + i + '"><text class="sname" x="' + c.x + '" y="' + y + '" text-anchor="middle">' + escapeHtml(p.fields.title) + '</text>' +
-                        '<text class="smeta" x="' + c.x + '" y="' + (y + 20) + '" text-anchor="middle">' + escapeHtml(p.fields.year) + ' · ' + escapeHtml(p.fields.team_label) + '</text></g></g>';
+                    return '<g class="side" data-side="' + side + '"><g class="slabel" data-j="' + i + '"><text class="sname" x="' + c.x + '" y="' + y + '" text-anchor="middle">' + escapeHtml(p.title) + '</text>' +
+                        '<text class="smeta" x="' + c.x + '" y="' + (y + 20) + '" text-anchor="middle">' + escapeHtml(p.year) + ' · ' + escapeHtml(p.team_label) + '</text></g></g>';
                 }
                 return '<g class="spoke" data-x="' + c.x + '" data-y="' + c.y + '">' +
                     '<circle class="set" data-j="' + i + '" cx="' + c.x + '" cy="' + c.y + '" r="' + hub.r + '"/>' + label("above") + label("below");
@@ -536,7 +536,7 @@
         }
 
         function draw() {
-            var sets = projects.filter(function (p) { return chosen.indexOf(p.pk) >= 0; });
+            var sets = projects.filter(function (p) { return chosen.indexOf(p.id) >= 0; });
             var hasSets = sets.length > 0;
             svg.classList.toggle("hide", !hasSets);
             empty.classList.toggle("hide", hasSets);
@@ -545,8 +545,8 @@
             // Which of the drawn sets each person belongs to
             var people = {};
             sets.forEach(function (p, i) {
-                p.fields.peers.forEach(function (peer) {
-                    var person = people[peer.pk] = people[peer.pk] || { pk: peer.pk, name: peer.name, icon: peer.icon_url, sets: [] };
+                p.peers.forEach(function (peer) {
+                    var person = people[peer.id] = people[peer.id] || { pk: peer.id, name: peer.name, icon: peer.icon_url, sets: [] };
                     person.sets.push(i);
                 });
             });
@@ -571,8 +571,8 @@
             });
             sets.forEach(function (p, i) {
                 var l = labelSpot(g.C[i], i, sets.length);
-                out += '<g class="slabel" data-j="' + i + '"><text class="sname" x="' + l.x + '" y="' + l.y + '" text-anchor="' + l.a + '">' + escapeHtml(p.fields.title) + '</text>' +
-                    '<text class="smeta" x="' + l.x + '" y="' + (l.y + 20) + '" text-anchor="' + l.a + '">' + escapeHtml(p.fields.year) + ' · ' + escapeHtml(p.fields.team_label) + '</text></g>';
+                out += '<g class="slabel" data-j="' + i + '"><text class="sname" x="' + l.x + '" y="' + l.y + '" text-anchor="' + l.a + '">' + escapeHtml(p.title) + '</text>' +
+                    '<text class="smeta" x="' + l.x + '" y="' + (l.y + 20) + '" text-anchor="' + l.a + '">' + escapeHtml(p.year) + ' · ' + escapeHtml(p.team_label) + '</text></g>';
             });
 
             // Every region of the diagram, so empty overlaps can be marked ∅
@@ -609,7 +609,7 @@
             void svg.getBoundingClientRect();
             svg.classList.add("is-drawn");
             svg.setAttribute("aria-label", sets.map(function (p) {
-                return p.fields.title + ": " + p.fields.peers.map(function (peer) { return peer.name; }).join(", ");
+                return p.title + ": " + p.peers.map(function (peer) { return peer.name; }).join(", ");
             }).join(". "));
             bindFocus();
         }
@@ -644,8 +644,8 @@
         function renderPicker() {
             picker.hidden = projects.length <= MAX_SETS;
             picker.innerHTML = projects.map(function (p) {
-                return '<button type="button" data-pk="' + p.pk + '" aria-pressed="' + (chosen.indexOf(p.pk) >= 0) + '">' +
-                    escapeHtml(p.fields.title) + ' · ' + escapeHtml(p.fields.year) + '</button>';
+                return '<button type="button" data-pk="' + p.id + '" aria-pressed="' + (chosen.indexOf(p.id) >= 0) + '">' +
+                    escapeHtml(p.title) + ' · ' + escapeHtml(p.year) + '</button>';
             }).join("");
         }
 
@@ -661,9 +661,9 @@
 
         return {
             render: function (data) {
-                var known = projects.map(function (p) { return p.pk; });
+                var known = projects.map(function (p) { return p.id; });
                 projects = data;
-                var pks = data.map(function (p) { return p.pk; });
+                var pks = data.map(function (p) { return p.id; });
                 chosen = chosen.filter(function (pk) { return pks.indexOf(pk) >= 0; });
                 if (known.length) {
                     // A project added since the last draw goes straight into the diagram
@@ -680,16 +680,20 @@
     })();
     </script>
 
+    {% csrf_token %}
     <script>
-    // Configuration
-    const BASE_PROJECTS_ENDPOINT = "{% url 'main:get_projects_json' %}";
+    // Configuration: everything below talks to the DRF API (/api/v1/)
+    const BASE_PROJECTS_ENDPOINT = "{% url 'api:project-list' %}";
+    const DETAIL_PROJECT_ENDPOINT = "{% url 'api:project-detail' '00000000-0000-0000-0000-000000000000' %}";
+    const STAR_PROJECT_ENDPOINT = "{% url 'api:project-star' '00000000-0000-0000-0000-000000000000' %}";
     const IS_AUTHENTICATED = "{{ user.is_authenticated|yesno:'true,false' }}" === "true";
+    const IS_SUPERUSER = "{{ user.is_superuser|yesno:'true,false' }}" === "true";
     const CAN_EDIT = "{{ perms.main.change_project|yesno:'true,false' }}" === "true";
-    const CAN_DELETE = "{{ perms.main.delete_project|yesno:'true,false' }}" === "true";
     const LOGIN_URL = "{% url 'main:login' %}?next={{ request.path|urlencode }}";
     // A dummy UUID used as a placeholder to be replaced with the real ID from the JSON data
     const DUMMY_ID = '00000000-0000-0000-0000-000000000000';
     let projectsAbortController;
+    let searchDebounceTimer;
 
     // DOM elements
     const loadingState = document.getElementById('loading');
@@ -700,6 +704,11 @@
     const specsContainer = gridContainer.querySelector('.specs');
     const searchForm = document.getElementById('project-search-form');
     const searchInput = document.getElementById('search-input');
+    const projectForm = document.getElementById('project-form');
+
+    function projectEndpoint(pattern, id) {
+        return pattern.replace(DUMMY_ID, id);
+    }
 
     // Show/hide page sections
     function displayPageSection({ showLoading = false, showError = false, showEmpty = false, showGrid = false }) {
@@ -710,13 +719,12 @@
     }
 
     // Build the screenshot card that sits in the stack
-    function buildProjectCardElement(item, index, total) {
-        const project = item.fields;
+    function buildProjectCardElement(project, index, total) {
         const articleElement = document.createElement('article');
         articleElement.className = 'pcard';
 
-        const imageHtml = project.project_image_url
-            ? `<img src="${escapeHtml(project.project_image_url)}" alt="Screenshot of ${escapeHtml(project.title)}" draggable="false">`
+        const imageHtml = project.image_src
+            ? `<img src="${escapeHtml(project.image_src)}" alt="Screenshot of ${escapeHtml(project.title)}" draggable="false">`
             : '';
 
         articleElement.innerHTML = `
@@ -735,30 +743,25 @@
     }
 
     // Build the title / facts / actions block shown beside the front card
-    function buildProjectSpecElement(item, index) {
-        const project = item.fields;
-        const projectId = item.pk;
+    function buildProjectSpecElement(project) {
+        const projectId = project.id;
         const { lead, body } = splitDescription(project.description);
 
         const articleElement = document.createElement('article');
         articleElement.className = 'spec';
         articleElement.id = `project-${projectId}`;
 
-        const starUrl = "{% url 'main:toggle_star' '00000000-0000-0000-0000-000000000000' %}".replace(DUMMY_ID, projectId);
         const editUrl = "{% url 'main:update_project' '00000000-0000-0000-0000-000000000000' %}".replace(DUMMY_ID, projectId);
-        const deleteUrl = "{% url 'main:delete_project' '00000000-0000-0000-0000-000000000000' %}".replace(DUMMY_ID, projectId);
 
         const starHtml = IS_AUTHENTICATED
-            ? `<form method="post" action="${starUrl}">
-                {% csrf_token %}
-                <button type="submit"
-                        class="btn pstar${project.is_starred ? ' on' : ''}"
-                        aria-pressed="${project.is_starred}"
-                        title="${project.star_count > 0 ? `Starred by ${escapeHtml(project.starred_by_names)}` : 'Be the first to star'}">
-                    ${STAR_SVG}${project.is_starred ? 'starred' : 'star'}
-                    <span class="cnt">${project.star_count}</span>
-                </button>
-            </form>`
+            ? `<button type="button"
+                    class="btn pstar${project.is_starred ? ' on' : ''}"
+                    data-action="star" data-id="${escapeHtml(projectId)}"
+                    aria-pressed="${project.is_starred}"
+                    title="${project.star_count > 0 ? `Starred by ${escapeHtml(project.starred_by_names)}` : 'Be the first to star'}">
+                ${STAR_SVG}${project.is_starred ? 'starred' : 'star'}
+                <span class="cnt">${project.star_count}</span>
+            </button>`
             : `<a class="btn pstar" href="${LOGIN_URL}">
                 ${STAR_SVG}log in to star
                 <span class="cnt">${project.star_count}</span>
@@ -770,17 +773,15 @@
             ? `<a class="btn" href="${escapeHtml(project.repo_url)}" target="_blank" rel="noopener">repository ↗</a>` : '';
         const editHtml = CAN_EDIT ? `<a class="btn btn-ghost" href="${editUrl}">edit</a>` : '';
 
-        const deleteHtml = CAN_DELETE
+        // Only the owner may DELETE through the API, so only the owner sees the button
+        const deleteHtml = IS_SUPERUSER
             ? `<button type="button" class="btn btn-ghost is-danger" popovertarget="confirm-${projectId}">delete</button>
             <div id="confirm-${projectId}" class="confirm" popover role="dialog" aria-labelledby="confirm-title-${projectId}">
                 <h3 id="confirm-title-${projectId}">Delete this project?</h3>
                 <p><strong>${escapeHtml(project.title)}</strong> will be removed from your portfolio. Its collaborators stay in Teams.</p>
                 <div class="confirm-actions">
                     <button type="button" class="btn btn-ghost" popovertarget="confirm-${projectId}" popovertargetaction="hide">keep it</button>
-                    <form method="post" action="${deleteUrl}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn is-danger">yes, delete</button>
-                    </form>
+                    <button type="button" class="btn is-danger" data-action="delete" data-id="${escapeHtml(projectId)}">yes, delete</button>
                 </div>
             </div>`
             : '';
@@ -843,14 +844,15 @@
         try {
             displayPageSection({ showLoading: true });
 
-            const url = searchQuery ? `${BASE_PROJECTS_ENDPOINT}?title=${encodeURIComponent(searchQuery)}` : BASE_PROJECTS_ENDPOINT;
+            const url = new URL(BASE_PROJECTS_ENDPOINT, window.location.origin);
+            if (searchQuery) url.searchParams.set('title', searchQuery);
 
             const response = await fetch(url, {
                 headers: { 'Accept': 'application/json' },
                 signal: projectsAbortController.signal,
             });
 
-            if (!response.ok) throw new Error('Failed to fetch data');
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
             const projectData = await response.json();
 
@@ -860,12 +862,9 @@
             if (projectData.length === 0) {
                 displayPageSection({ showEmpty: true });
             } else {
-                stackContainer.innerHTML = '';
-                specsContainer.innerHTML = '';
-                projectData.forEach((item, index) => {
-                    stackContainer.appendChild(buildProjectCardElement(item, index, projectData.length));
-                    specsContainer.appendChild(buildProjectSpecElement(item, index));
-                });
+                stackContainer.replaceChildren(...projectData.map(
+                    (project, index) => buildProjectCardElement(project, index, projectData.length)));
+                specsContainer.replaceChildren(...projectData.map(buildProjectSpecElement));
                 projectDeck.reset();
                 displayPageSection({ showGrid: true });
             }
@@ -876,14 +875,92 @@
         }
     }
 
-    // Search form event handler
-    searchForm.addEventListener('submit', function(e) {
-        e.preventDefault(); // Prevent the page from reloading
-        fetchProjects(searchInput.value.trim()); // Run the search via AJAX
+    // Serializer errors look like {"title": ["..."]} or {"detail": "..."}
+    function apiErrorMessage(data, status) {
+        const messages = Object.values(data).flat().filter(value => typeof value === 'string');
+        return messages.join(' ') || `Request failed (HTTP ${status}).`;
+    }
+
+    // One place for every API write: method, JSON body, CSRF token and errors
+    async function writeProject(url, method, payload) {
+        const response = await fetch(url, {
+            method,
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: payload === undefined ? undefined : JSON.stringify(payload),
+        });
+        if (response.status === 204) return null;
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(apiErrorMessage(data, response.status));
+        return data;
+    }
+
+    // Add project: the modal's fields, picked by name so the CSRF input isn't sent as data
+    async function addProject(event) {
+        event.preventDefault();
+        const button = projectForm.querySelector('button[type="submit"]');
+        button.disabled = true;
+        try {
+            const fields = new FormData(projectForm);
+            const payload = Object.fromEntries([
+                'title', 'year', 'image', 'role', 'tech_stack', 'context',
+                'description', 'repo_url', 'live_url', 'new_peer', 'new_peer_icon',
+            ].map(name => [name, fields.get(name) || '']));
+            payload.peer_ids = fields.getAll('peers');
+            // Optional URLs are null in the model, not ""
+            if (!payload.repo_url) payload.repo_url = null;
+            if (!payload.live_url) payload.live_url = null;
+            if (!payload.peer_ids.length && !payload.new_peer) {
+                throw new Error('Pick at least one builder, or add a new one.');
+            }
+            const project = await writeProject(BASE_PROJECTS_ENDPOINT, 'POST', payload);
+            projectForm.reset();
+            document.getElementById('add-project-modal').hidePopover();
+            showToast('Project added', `${project.title} added.`, 'success');
+            await fetchProjects(searchInput.value.trim());
+        } catch (error) {
+            showToast('Not saved', error.message, 'error');
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    if (projectForm) projectForm.addEventListener('submit', addProject);
+
+    // Star and delete buttons are re-rendered on every fetch, so listen once on the container
+    specsContainer.addEventListener('click', async function (event) {
+        const button = event.target.closest('button[data-action]');
+        if (!button || button.disabled) return;
+        const action = button.dataset.action;
+        button.disabled = true;
+        try {
+            const pattern = action === 'star' ? STAR_PROJECT_ENDPOINT : DETAIL_PROJECT_ENDPOINT;
+            await writeProject(projectEndpoint(pattern, button.dataset.id), action === 'star' ? 'POST' : 'DELETE');
+            if (action === 'delete') showToast('Deleted', 'Project deleted.', 'success');
+            await fetchProjects(searchInput.value.trim());
+        } catch (error) {
+            showToast('Request failed', error.message, 'error');
+        } finally {
+            button.disabled = false;
+        }
     });
 
-    // Post a modal form with fetch; on success close it and redraw the deck and Teams
-    function ajaxModalForm(formId, modalId, endpoint, successTitle, onSuccess) {
+    // Search: debounced while typing, immediate on submit
+    searchInput.addEventListener('input', function () {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => fetchProjects(searchInput.value.trim()), 300);
+    });
+    searchForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearTimeout(searchDebounceTimer);
+        fetchProjects(searchInput.value.trim());
+    });
+
+    // The teammate modal still posts form data to its own (non-API) endpoint
+    function ajaxModalForm(formId, modalId, endpoint, successTitle) {
         const form = document.getElementById(formId);
         if (!form) return;
         form.addEventListener('submit', async function (event) {
@@ -901,7 +978,6 @@
                     form.reset();
                     document.getElementById(modalId).hidePopover();
                     showToast(successTitle, result.message || 'Saved.', 'success');
-                    if (onSuccess) onSuccess(result);
                     fetchProjects(searchInput.value.trim());
                 } else {
                     showToast('Not saved', errorText(result, response.status), 'error');
@@ -915,7 +991,6 @@
         });
     }
 
-    ajaxModalForm('project-form', 'add-project-modal', "{% url 'main:create_project_ajax' %}", 'Project added');
     ajaxModalForm('teammate-form', 'add-teammate-modal', "{% url 'main:add_teammate' %}", 'Teammate added');
 
     // Keep both modals' chips in step with the data: teams to join, and builders to pick
@@ -923,17 +998,17 @@
         const teamBox = document.getElementById('teammate-teams');
         if (teamBox) {
             const ticked = Array.from(teamBox.querySelectorAll('input:checked')).map(input => input.value);
-            teamBox.innerHTML = projectData.map(item => `
-                <input type="checkbox" id="tm-${item.pk}" name="projects" value="${item.pk}"${ticked.includes(item.pk) ? ' checked' : ''}>
-                <label for="tm-${item.pk}">${escapeHtml(item.fields.title)}</label>`).join('');
+            teamBox.innerHTML = projectData.map(project => `
+                <input type="checkbox" id="tm-${project.id}" name="projects" value="${project.id}"${ticked.includes(project.id) ? ' checked' : ''}>
+                <label for="tm-${project.id}">${escapeHtml(project.title)}</label>`).join('');
         }
         const builderBox = document.getElementById('builder-tags');
         if (builderBox) {
-            projectData.forEach(item => item.fields.peers.forEach(peer => {
-                if (builderBox.querySelector(`input[value="${peer.pk}"]`)) return;
+            projectData.forEach(project => project.peers.forEach(peer => {
+                if (builderBox.querySelector(`input[value="${peer.id}"]`)) return;
                 builderBox.insertAdjacentHTML('beforeend', `
-                    <input type="checkbox" id="id_peers_${peer.pk}" name="peers" value="${peer.pk}">
-                    <label for="id_peers_${peer.pk}">${escapeHtml(peer.name)}</label>`);
+                    <input type="checkbox" id="id_peers_${peer.id}" name="peers" value="${peer.id}">
+                    <label for="id_peers_${peer.id}">${escapeHtml(peer.name)}</label>`);
             }));
         }
     }
