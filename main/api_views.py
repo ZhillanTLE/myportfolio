@@ -13,6 +13,10 @@ from main.permissions import IsPortfolioOwnerOrEditorOrReadOnly, IsPortfolioOwne
 from main.serializers import ExperienceSerializer, ProjectSerializer
 
 
+def _experiences():
+    return Experience.objects.prefetch_related("starred_by")
+
+
 def _projects():
     return Project.objects.prefetch_related("starred_by", "peers")
 
@@ -79,7 +83,8 @@ def project_star(request, project_id):
 @permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
 def experience_list(request):
     if request.method in ("GET", "HEAD"):
-        experiences = Experience.objects.prefetch_related("starred_by")
+        experiences = _experiences()
+        # Search from Tugas 5, now a query parameter: ?q= matches role or organization
         query = request.query_params.get("q", "").strip()
         if query:
             experiences = experiences.filter(
@@ -98,7 +103,7 @@ def experience_list(request):
 @authentication_classes([SessionAuthentication])
 @permission_classes([IsPortfolioOwnerOrEditorOrReadOnly])
 def experience_detail(request, experience_id):
-    experience = get_object_or_404(Experience, pk=experience_id)
+    experience = get_object_or_404(_experiences(), pk=experience_id)
     if request.method in ("GET", "HEAD"):
         return Response(ExperienceSerializer(experience, context={"request": request}).data)
 
@@ -113,3 +118,17 @@ def experience_detail(request, experience_id):
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return Response(serializer.data)
+
+
+@api_view(["POST"])
+@authentication_classes([SessionAuthentication])
+@permission_classes([IsAuthenticated])
+def experience_star(request, experience_id):
+    """Toggle the caller's star. The starring account is always request.user, never a request field."""
+    experience = get_object_or_404(Experience, pk=experience_id)
+    if experience.starred_by.filter(pk=request.user.pk).exists():
+        experience.starred_by.remove(request.user)
+    else:
+        experience.starred_by.add(request.user)
+    experience = get_object_or_404(_experiences(), pk=experience_id)   # fresh star data
+    return Response(ExperienceSerializer(experience, context={"request": request}).data)

@@ -97,6 +97,10 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 
 class ExperienceSerializer(serializers.ModelSerializer):
+    """Experience for the API. Explicit fields; star data is computed and read-only.
+
+    starred_by itself is never exposed, so no username, email or password hash leaks out.
+    """
     category_label = serializers.CharField(source="get_category_display", read_only=True)
     period = serializers.CharField(read_only=True)
     is_ongoing = serializers.BooleanField(read_only=True)
@@ -135,11 +139,12 @@ class ExperienceSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"ended_at": "End date can't be before the start date."})
         return attrs
 
+    # Both read the prefetched starred_by, so a list costs one extra query, not two per row
     def get_star_count(self, obj):
-        return obj.starred_by.count()
+        return len(obj.starred_by.all())
 
     def get_is_starred(self, obj):
         request = self.context.get("request")
         if request is None or not request.user.is_authenticated:
             return False
-        return obj.starred_by.filter(pk=request.user.pk).exists()
+        return any(user.pk == request.user.pk for user in obj.starred_by.all())

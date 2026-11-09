@@ -18,8 +18,8 @@
                                    aria-label="Search experience by role or organization"
                                    autocomplete="off">
                         </form>
-                        {% if experience_form %}
-                        <button type="button" class="btn" popovertarget="add-experience-modal">+ add experience</button>
+                        {% if experience_form and user.is_superuser %}
+                        <button type="button" class="btn" id="experience-add" popovertarget="add-experience-modal">+ add experience</button>
                         {% endif %}
                     </div>
                 </div>
@@ -154,6 +154,35 @@
         return result.errors
             ? Object.values(result.errors).flat().map(error => error.message).join(' ')
             : (result.message || `Something went wrong (status ${status}).`);
+    }
+
+    // Serializer errors look like {"title": ["..."]} or {"detail": "..."}
+    function apiErrorMessage(data, status) {
+        const messages = Object.values(data).flat().filter(value => typeof value === 'string');
+        return messages.join(' ') || `Request failed (HTTP ${status}).`;
+    }
+
+    // One place for every API write: method, JSON body, CSRF token and errors
+    async function apiWrite(url, method, payload) {
+        const response = await fetch(url, {
+            method,
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: payload === undefined ? undefined : JSON.stringify(payload),
+        });
+        if (response.status === 204) return null;
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            // Keep the raw body so a caller can label field errors with its own form labels
+            const error = new Error(apiErrorMessage(data, response.status));
+            error.data = data;
+            error.status = response.status;
+            throw error;
+        }
+        return data;
     }
     </script>
 
@@ -875,29 +904,6 @@
         }
     }
 
-    // Serializer errors look like {"title": ["..."]} or {"detail": "..."}
-    function apiErrorMessage(data, status) {
-        const messages = Object.values(data).flat().filter(value => typeof value === 'string');
-        return messages.join(' ') || `Request failed (HTTP ${status}).`;
-    }
-
-    // One place for every API write: method, JSON body, CSRF token and errors
-    async function writeProject(url, method, payload) {
-        const response = await fetch(url, {
-            method,
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken'),
-            },
-            body: payload === undefined ? undefined : JSON.stringify(payload),
-        });
-        if (response.status === 204) return null;
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(apiErrorMessage(data, response.status));
-        return data;
-    }
-
     // Add project: the modal's fields, picked by name so the CSRF input isn't sent as data
     async function addProject(event) {
         event.preventDefault();
@@ -916,7 +922,7 @@
             if (!payload.peer_ids.length && !payload.new_peer) {
                 throw new Error('Pick at least one builder, or add a new one.');
             }
-            const project = await writeProject(BASE_PROJECTS_ENDPOINT, 'POST', payload);
+            const project = await apiWrite(BASE_PROJECTS_ENDPOINT, 'POST', payload);
             projectForm.reset();
             document.getElementById('add-project-modal').hidePopover();
             showToast('Project added', `${project.title} added.`, 'success');
@@ -938,7 +944,7 @@
         button.disabled = true;
         try {
             const pattern = action === 'star' ? STAR_PROJECT_ENDPOINT : DETAIL_PROJECT_ENDPOINT;
-            await writeProject(projectEndpoint(pattern, button.dataset.id), action === 'star' ? 'POST' : 'DELETE');
+            await apiWrite(projectEndpoint(pattern, button.dataset.id), action === 'star' ? 'POST' : 'DELETE');
             if (action === 'delete') showToast('Deleted', 'Project deleted.', 'success');
             await fetchProjects(searchInput.value.trim());
         } catch (error) {
@@ -1018,10 +1024,13 @@
     </script>
 
     <script>
-    /* Experience: the section above is a skeleton; everything in it comes from get_experiences_json */
+    /* Experience: the section above is a skeleton; everything in it comes from the DRF API (/api/v1/experiences/) */
     (function () {
-        const ENDPOINT = "{% url 'main:get_experiences_json' %}";
-        const STAR_URL = "{% url 'main:toggle_experience_star' '00000000-0000-0000-0000-000000000000' %}";
+        const ENDPOINT = "{% url 'api:experience-list' %}";
+        const DETAIL_URL = "{% url 'api:experience-detail' '00000000-0000-0000-0000-000000000000' %}";
+        const STAR_URL = "{% url 'api:experience-star' '00000000-0000-0000-0000-000000000000' %}";
+        // Editors may PUT/PATCH, only the owner may POST/DELETE; the API checks this again on every request
+        const CAN_EDIT_EXPERIENCE = "{{ perms.main.change_experience|yesno:'true,false' }}" === "true";
         const SEARCH_DELAY = 400;   // ms of quiet typing before a search request goes out
 
         const loadingState = document.getElementById('experience-loading');
@@ -1031,9 +1040,15 @@
         const searchForm = document.getElementById('experience-search-form');
         const searchInput = document.getElementById('experience-search');
 
+        const modal = document.getElementById('add-experience-modal');
+        const form = document.getElementById('experience-form');
+        const FIELDS = ['title', 'organization', 'category', 'started_at', 'ended_at', 'description'];
+
         let controller;
         let debounceTimer;
         let lastQuery = null;
+        let editingId = null;         // null: the modal adds; an id: the modal edits that row
+        const loaded = new Map();     // id -> last experience object from the API, used to prefill edit
 
         function show({ loading = false, error = false, empty = false, items = false }) {
             loadingState.classList.toggle('hide', !loading);
@@ -1042,7 +1057,7 @@
             list.classList.toggle('hide', !items);
         }
 
-        function starButtonHtml(experience, pk) {
+        function starButtonHtml(experience) {
             if (!IS_AUTHENTICATED) {
                 return `<a class="btn pstar" href="${LOGIN_URL}">
                     ${STAR_SVG}log in to star <span class="cnt">${experience.star_count}</span>
@@ -1050,20 +1065,36 @@
             }
             return `<button type="button"
                         class="btn pstar${experience.is_starred ? ' on' : ''}"
-                        data-star="${escapeHtml(pk)}"
+                        data-action="star" data-id="${escapeHtml(experience.id)}"
                         aria-pressed="${experience.is_starred}">
                     ${STAR_SVG}<span class="word">${experience.is_starred ? 'starred' : 'star'}</span>
                     <span class="cnt">${experience.star_count}</span>
                 </button>`;
         }
 
-        function buildRole(item, index) {
-            const experience = item.fields;
+        function manageButtonsHtml(experience) {
+            const id = escapeHtml(experience.id);
+            const edit = CAN_EDIT_EXPERIENCE
+                ? `<button type="button" class="btn btn-ghost" data-action="edit" data-id="${id}">edit</button>` : '';
+            const remove = IS_SUPERUSER
+                ? `<button type="button" class="btn btn-ghost is-danger" popovertarget="confirm-exp-${id}">delete</button>
+                <div id="confirm-exp-${id}" class="confirm" popover role="dialog" aria-labelledby="confirm-exp-title-${id}">
+                    <h3 id="confirm-exp-title-${id}">Delete this role?</h3>
+                    <p><strong>${escapeHtml(experience.title)}</strong> will be removed from your experience.</p>
+                    <div class="confirm-actions">
+                        <button type="button" class="btn btn-ghost" popovertarget="confirm-exp-${id}" popovertargetaction="hide">keep it</button>
+                        <button type="button" class="btn is-danger" data-action="delete" data-id="${id}">yes, delete</button>
+                    </div>
+                </div>` : '';
+            return edit + remove;
+        }
+
+        function buildRole(experience, index) {
             const role = document.createElement('details');
             role.className = 'role';
             role.style.setProperty('--i', Math.min(index, 12));   // stagger the entrance, capped so long lists don't drag
-            role.id = `experience-${item.pk}`;
-            role.dataset.pk = item.pk;
+            role.id = `experience-${experience.id}`;
+            role.dataset.pk = experience.id;
 
             const org = [experience.organization, experience.category_label].filter(Boolean).map(escapeHtml).join(' &middot; ');
             role.innerHTML = `
@@ -1078,13 +1109,13 @@
                     <ul class="role-points">
                         ${experience.points.map(point => `<li>${escapeHtml(point)}</li>`).join('')}
                     </ul>
-                    <div class="zr role-actions">${starButtonHtml(experience, item.pk)}</div>
+                    <div class="zr role-actions">${starButtonHtml(experience)}${manageButtonsHtml(experience)}</div>
                 </div>
             `;
             return role;
         }
 
-        // force: reload even when the query hasn't changed (after adding, or on retry)
+        // force: reload even when the query hasn't changed (after a write, or on retry)
         async function loadExperiences(query, { force = false, open = [] } = {}) {
             if (!force && query === lastQuery) return;
             lastQuery = query;
@@ -1097,13 +1128,17 @@
             show({ loading: true });
 
             try {
-                const url = query ? `${ENDPOINT}?q=${encodeURIComponent(query)}` : ENDPOINT;
+                const url = new URL(ENDPOINT, window.location.origin);
+                if (query) url.searchParams.set('q', query);
                 const response = await fetch(url, {
                     headers: { 'Accept': 'application/json' },
                     signal: controller.signal,
                 });
                 if (!response.ok) throw new Error(`Status ${response.status}`);
                 const experiences = await response.json();
+
+                loaded.clear();
+                experiences.forEach(experience => loaded.set(experience.id, experience));
 
                 if (experiences.length === 0) {
                     emptyState.textContent = query ? `No experience matches “${query}”.` : 'No experience added yet.';
@@ -1123,6 +1158,8 @@
             }
         }
 
+        const reload = (options = {}) => loadExperiences(searchInput.value.trim(), { force: true, ...options });
+
         // Debounced search: each keystroke restarts the timer, so only the pause sends a request
         searchInput.addEventListener('input', function () {
             clearTimeout(debounceTimer);
@@ -1133,73 +1170,97 @@
             clearTimeout(debounceTimer);
             loadExperiences(searchInput.value.trim());
         });
-        document.getElementById('experience-retry').addEventListener('click', function () {
-            loadExperiences(searchInput.value.trim(), { force: true });
-        });
+        document.getElementById('experience-retry').addEventListener('click', () => reload());
 
-        // Star / unstar in place
+        // "Started: This field is required." reads better than the bare message
+        function labelledErrorText(error) {
+            if (!error.data || error.status !== 400) return error.message;
+            return Object.entries(error.data).map(([field, messages]) => {
+                const label = form && form.querySelector(`label[for="experience_${field}"]`);
+                const name = label ? label.textContent.replace('*', '').trim() + ': ' : '';
+                return name + [].concat(messages).join(' ');
+            }).join(' ');
+        }
+
+        // Star, edit and delete live on rows that are redrawn, so one listener on the list handles them all
         list.addEventListener('click', async function (event) {
-            const button = event.target.closest('button[data-star]');
-            if (!button) return;
+            const button = event.target.closest('button[data-action]');
+            if (!button || button.disabled) return;
+            const { action, id } = button.dataset;
+
+            if (action === 'edit') {
+                openEditor(loaded.get(id));
+                return;
+            }
+
             button.disabled = true;
             try {
-                const response = await fetch(STAR_URL.replace(DUMMY_ID, button.dataset.star), {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': getCookie('csrftoken') },
-                });
-                const result = await response.json().catch(() => ({}));
-                if (!response.ok) {
-                    showToast('Not starred', errorText(result, response.status), 'error');
-                    return;
+                if (action === 'star') {
+                    const result = await apiWrite(STAR_URL.replace(DUMMY_ID, id), 'POST');
+                    // Update in place: a redraw would collapse the open row
+                    button.classList.toggle('on', result.is_starred);
+                    button.setAttribute('aria-pressed', String(result.is_starred));
+                    button.querySelector('.word').textContent = result.is_starred ? 'starred' : 'star';
+                    button.querySelector('.cnt').textContent = result.star_count;
+                    loaded.set(id, result);
+                } else if (action === 'delete') {
+                    await apiWrite(DETAIL_URL.replace(DUMMY_ID, id), 'DELETE');
+                    showToast('Deleted', 'Role removed from your experience.', 'success');
+                    await reload();
                 }
-                button.classList.toggle('on', result.is_starred);
-                button.setAttribute('aria-pressed', String(result.is_starred));
-                button.querySelector('.word').textContent = result.is_starred ? 'starred' : 'star';
-                button.querySelector('.cnt').textContent = result.star_count;
             } catch (error) {
-                console.error('Error starring experience:', error);
-                showToast('Not starred', 'Could not reach the server. Please try again.', 'error');
+                showToast(action === 'star' ? 'Not starred' : 'Not deleted', labelledErrorText(error), 'error');
             } finally {
                 button.disabled = false;
             }
         });
 
-        // Add experience from the modal
-        const form = document.getElementById('experience-form');
+        // Add / edit modal
 
-        // "Started: This field is required." reads better than the bare message
-        function formErrorText(result, status) {
-            if (!result.errors) return errorText(result, status);
-            return Object.entries(result.errors).map(([field, errors]) => {
-                const label = form.querySelector(`label[for="experience_${field}"]`);
-                const name = label ? label.textContent.replace('*', '').trim() + ': ' : '';
-                return name + errors.map(error => error.message).join(' ');
-            }).join(' ');
+        function setMode(experience) {
+            editingId = experience ? experience.id : null;
+            document.getElementById('add-experience-modal-title').textContent = experience ? 'Edit experience' : 'Add experience';
+            document.getElementById('experience-submit').textContent = experience ? 'Save changes' : 'Add experience';
+        }
+
+        function openEditor(experience) {
+            if (!form || !experience) return;
+            form.reset();
+            FIELDS.forEach(name => { form.elements[name].value = experience[name] ?? ''; });
+            setMode(experience);
+            modal.showPopover();
         }
 
         if (form) {
+            // Closing the modal any way (cancel, ×, Esc, backdrop) returns it to "add"
+            modal.addEventListener('toggle', function (event) {
+                if (event.newState === 'closed' && editingId) {
+                    form.reset();
+                    setMode(null);
+                }
+            });
+
             form.addEventListener('submit', async function (event) {
                 event.preventDefault();
-                const submitButton = form.querySelector('button[type="submit"]');
+                const submitButton = document.getElementById('experience-submit');
                 submitButton.disabled = true;
+
+                // Only the model fields go out, so csrfmiddlewaretoken is never treated as data
+                const fields = new FormData(form);
+                const payload = Object.fromEntries(FIELDS.map(name => [name, fields.get(name) ?? '']));
+                payload.ended_at = payload.ended_at || null;   // empty date means "still going"
+
+                const editing = editingId;
                 try {
-                    const response = await fetch(form.action, {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': getCookie('csrftoken') },
-                        body: new FormData(form),   // also carries csrfmiddlewaretoken
-                    });
-                    const result = await response.json().catch(() => ({}));
-                    if (response.status === 201) {
-                        form.reset();
-                        document.getElementById('add-experience-modal').hidePopover();
-                        showToast('Experience added', result.message || 'Saved.', 'success');
-                        loadExperiences(searchInput.value.trim(), { force: true, open: [result.pk] });
-                    } else {
-                        showToast('Not saved', formErrorText(result, response.status), 'error');
-                    }
+                    const experience = editing
+                        ? await apiWrite(DETAIL_URL.replace(DUMMY_ID, editing), 'PATCH', payload)
+                        : await apiWrite(ENDPOINT, 'POST', payload);
+                    form.reset();
+                    modal.hidePopover();
+                    showToast(editing ? 'Experience updated' : 'Experience added', `${experience.title} saved.`, 'success');
+                    await reload({ open: [experience.id] });
                 } catch (error) {
-                    console.error('Error adding experience:', error);
-                    showToast('Not saved', 'Could not reach the server. Please try again.', 'error');
+                    showToast('Not saved', labelledErrorText(error), 'error');
                 } finally {
                     submitButton.disabled = false;
                 }

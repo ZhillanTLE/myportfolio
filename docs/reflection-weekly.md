@@ -58,3 +58,8 @@
 
 3. 
     The view runs QuerySet through serializers.serialize("json", ...), which extracts only the field values from each Project and converts them into JSON string. It will then return it in an HttpResponse with content_type="application/json", because a model instance is a live Python object (methods, database connection, memory address) that cannot be sent over HTTP, whereas JSOn is plain text that any client can parse.
+
+### Assignment 5's Reflection
+1. Debouncing lets the website load for rapid user actions. User makes network requests to a server to fetch or send data without reloading the page. Without debouncing, rapid user actions can cause major performance and cost issues.
+2. Pause code execution until the network request finishes and returns its data.
+3. XSS generally occurs when an application takes user input (like a comment or search query) and displays it back on the page without properly cleaning or escaping the code which would allow attackers to steal session cookies, hijack user accounts, log keystrokes, or redirect users to malicious sites.

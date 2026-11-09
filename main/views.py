@@ -117,7 +117,8 @@ def show_projects(request):
         context["form"] = ProjectForm()
     if request.user.has_perm("main.change_project"):
         context["teammate_form"] = TeammateForm()
-    if request.user.has_perm("main.add_experience"):
+    # One modal serves both add (owner only) and edit (owner or editor); the API enforces the same split
+    if request.user.has_perm("main.change_experience"):
         # Own id prefix: the project modal on the same page already uses id_title, id_description
         context["experience_form"] = ExperienceForm(auto_id="experience_%s")
     return render(request, "projects.html", context)
