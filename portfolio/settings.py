@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-bc2h=xqr6rnurw&=-9sgs=i)9kbn9qoawan$=+jn0g9(f@d5kt
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "zhillan-baniaksa-myportfolio.pws.cs.ui.ac.id"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "10.0.2.2", "zhillan-baniaksa-myportfolio.pws.cs.ui.ac.id"]
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 
 CSRF_TRUSTED_ORIGINS = ["https://zhillan-baniaksa-myportfolio.pws.cs.ui.ac.id"]
@@ -44,11 +44,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'main',
+    'corsheaders',
     'rest_framework',
+    'rest_framework.authtoken',
+    'main',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -79,6 +82,18 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'portfolio.wsgi.application'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
+
+# Local development CORS settings for Flutter Web (Chrome)
+# Make sure to limit this on production, e.g.,
+# load CORS_ALLOW_ALL_ORIGINS value from .env set on the deployment environment
+CORS_ALLOW_ALL_ORIGINS = True
 
 
 # Database
